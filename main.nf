@@ -1,4 +1,5 @@
 #! /usr/bin/env nextflow
+
 /*
 ========================================================================================
                          predixcan
@@ -39,14 +40,44 @@ if (params.gtf) {
         .fromPath(params.gtf, checkIfExists: true)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
   } else {
-  newch = Channel
+  gene_annot = Channel
         .fromPath(params.gtf, checkIfExists: true)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
   }
 }
 
+if (params.snp) {
+ if (hasExtension(params.snp, 'gz')) {
+  snp_gz = Channel
+        .fromPath(params.snp, checkIfExists: true)
+        .ifEmpty { exit 1, "SNP annotation file not found: ${params.snp}" }
+  } else {
+  snp_annot = Channel
+        .fromPath(params.snp, checkIfExists: true)
+        .ifEmpty { exit 1, "SNP annotation file not found: ${params.snp}" }
+  }
+}
 
-// Gunzip the gtf file
+if (params.genotype) {
+ if (hasExtension(params.genotype, 'gz')) {
+  genotype_gz = Channel
+        .fromPath(params.genotype, checkIfExists: true)
+        .ifEmpty { exit 1, "Genotype file not found: ${params.genotype}" }
+  } else {
+  gene_split = Channel
+        .fromPath(params.genotype, checkIfExists: true)
+        .ifEmpty { exit 1, "Genotype file not found: ${params.genotype}" }
+  }
+}
+
+
+/*
+ * -------------------------------------------------
+ *  Gunzip all the inputs if they are gzipped (.gz)
+ * -------------------------------------------------
+ */
+
+//
 if (params.gtf && hasExtension(params.gtf, 'gz')) {
     process gunzip_gtf {
         tag "$gz"
@@ -54,10 +85,10 @@ if (params.gtf && hasExtension(params.gtf, 'gz')) {
                    saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
 
         input:
-        file gz from gtf_gz
+        path gz from gtf_gz
 
         output:
-        file "${gz.baseName}" into newch
+        path "${gz.baseName}" into gene_annot
 
         script:
         """
@@ -65,6 +96,100 @@ if (params.gtf && hasExtension(params.gtf, 'gz')) {
         """
     }
 }
+
+if (params.snp && hasExtension(params.snp, 'gz')) {
+    process gunzip_snp {
+        tag "$gz"
+        publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
+                   saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
+
+        input:
+        path gz from snp_gz
+
+        output:
+        path "${gz.baseName}" into snp_annot
+
+        script:
+        """
+        gunzip -k --verbose --stdout --force ${gz} > ${gz.baseName}
+        """
+    }
+}
+
+if (params.genotype && hasExtension(params.genotype, 'gz')) {
+    process gunzip_genotype {
+        tag "$gz"
+        publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
+                   saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
+
+        input:
+        path gz from genotype_gz
+
+        output:
+        path "${gz.baseName}" into gene_split
+
+        script:
+        """
+        gunzip -k --verbose --stdout --force ${gz} > ${gz.baseName}
+        """
+    }
+}
+
+
+/*
+ * -------------------------------------------------
+ *  Pre-process all the input files
+ * -------------------------------------------------
+ */
+
+process gene_annotation {
+    tag "pre-processing"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/gtf" : false },    
+	       saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input:
+    path gtf from gene_annot
+
+    output:
+    path "gene_annot.parsed.txt" into ch
+
+    script:
+    """
+    parse_gtf.py ${gtf} gene_annot.parsed.txt
+    """
+}
+
+process snp_annotation {
+    tag "pre-processing"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/snp_annot" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input:
+    path snp from snp_annot
+
+    output:
+    path "snp_annot.*.txt" into ch2
+
+    script:
+    """
+    split_snp_annot_by_chr.py ${snp} snp_annot
+    """
+}
+
+process split_genotype {
+    tag "pre-processing"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/genotype" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input:
+    path genot from gene_split
+
+    output:
+    path "genotype.*.txt" into ch3
+
+    script:
+    """
+    split_genotype_by_chr.py ${genot} genotype
+    """
+}
+
 
 // Check file extension
 def hasExtension(it, extension) {
