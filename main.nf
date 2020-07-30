@@ -16,14 +16,14 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run main.nf --vcf 'vcffile.vcf' --gene_annot 'gene_annnotation_file'
+    nextflow run main.nf --gtf 'vcffile.vcf' --gene_annot 'gene_annnotation_file'
     
 
     Mandatory arguments:
         --gtf
-        --vcf
-        --gene_annot
-        --snp_annot
+        --snp
+        --genotype
+        --gene_exp
     """.stripIndent()
 }
 
@@ -70,6 +70,17 @@ if (params.genotype) {
   }
 }
 
+if (params.gene_exp) {
+ if (hasExtension(params.gene_exp, 'gz')) {
+  geneExp_gz = Channel
+        .fromPath(params.gene_exp, checkIfExists: true)
+        .ifEmpty { exit 1, "Gene expression file not found: ${params.gene_exp}" }
+  } else {
+  gene_expr = Channel
+        .fromPath(params.gene_exp, checkIfExists: true)
+        .ifEmpty { exit 1, "Gene expression file not found: ${params.gene_exp}" }
+  }
+}
 
 /*
  * -------------------------------------------------
@@ -77,13 +88,11 @@ if (params.genotype) {
  * -------------------------------------------------
  */
 
-//
 if (params.gtf && hasExtension(params.gtf, 'gz')) {
     process gunzip_gtf {
         tag "$gz"
         publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
                    saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
-
         input:
         path gz from gtf_gz
 
@@ -98,11 +107,10 @@ if (params.gtf && hasExtension(params.gtf, 'gz')) {
 }
 
 if (params.snp && hasExtension(params.snp, 'gz')) {
-    process gunzip_snp {
+    process gunzip_annot {
         tag "$gz"
         publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
                    saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
-
         input:
         path gz from snp_gz
 
@@ -121,7 +129,6 @@ if (params.genotype && hasExtension(params.genotype, 'gz')) {
         tag "$gz"
         publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
                    saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
-
         input:
         path gz from genotype_gz
 
@@ -135,6 +142,23 @@ if (params.genotype && hasExtension(params.genotype, 'gz')) {
     }
 }
 
+if (params.gene_exp && hasExtension(params.gene_exp, 'gz')) {
+    process gunzip_geneExpression {
+        tag "$gz"
+        publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
+                   saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
+        input:
+        path gz from geneExp_gz
+
+        output:
+        path "${gz.baseName}" into gene_expr
+
+        script:
+        """
+        gunzip -k --verbose --stdout --force ${gz} > ${gz.baseName}
+        """
+    }
+}
 
 /*
  * -------------------------------------------------
@@ -158,7 +182,7 @@ process gene_annotation {
     """
 }
 
-process snp_annotation {
+process split_annotation {
     tag "pre-processing"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/snp_annot" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
@@ -190,6 +214,21 @@ process split_genotype {
     """
 }
 
+process transpose_geneExpression {
+    tag "pre-processing"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/transpose_gene-expr" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input:
+    path geneExp from gene_expr
+
+    output:
+    path "transposed_gene_exp.csv" into ch4
+
+    script:
+    """
+    transpose_gene_expr.R ${geneExp} transposed_gene_exp.csv
+    """
+}
 
 // Check file extension
 def hasExtension(it, extension) {
