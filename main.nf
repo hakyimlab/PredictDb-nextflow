@@ -1,13 +1,13 @@
 #! /usr/bin/env nextflow
 
 /*
-========================================================================================
-                         predixcan
-========================================================================================
- PrediXcan Analysis Pipeline.
+==================================================
+                    PredictDb
+==================================================
+ PredictDb Analysis Pipeline.
  #### Homepage / Documentation
- https:
-----------------------------------------------------------------------------------------
+ https:://github.com/hakyimlab/PredictDb-nextflow
+---------------------------------------------------
 */
 
 def helpMessage() {
@@ -222,13 +222,87 @@ process transpose_geneExpression {
     path geneExp from gene_expr
 
     output:
-    path "transposed_gene_exp.csv" into ch4
+    path "transposed_gene_exp.csv" into peers
+    path "transposed_gene_colnames.csv" into gene_cols
 
     script:
     """
-    transpose_gene_expr.R ${geneExp} transposed_gene_exp.csv
+    transpose_gene_expr.R ${geneExp} transposed_gene_exp.csv transposed_gene_colnames.csv
+    wc -l transposed_gene_exp.csv | cut -d " " -f1 > count.txt
     """
 }
+
+/* Calculate PEER factors
+ * ------------------------
+ * If the number of samples is greater than or equal to 350, we use 60 PEER factors, 
+ * If the number of samples is between 250 and 350, we use 45 PEER factors,
+ * If the number of samples is between 150 and 250, we use 30 PEER factors, 
+ * and if the number of samples is less than 150 we use 15 PEER factors.
+ */
+
+process generate_peer_factors {
+    tag "PEER Factors"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/PEER" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input:
+    path csv from peers
+
+    output:
+    path "calculated_peers/X.csv" into ch4
+
+    script:
+    """
+    peertool -f ${csv} -n 5 --has_header -o calculated_peers
+    """
+}
+
+process covariate_processing {
+    tag "covariates"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/Covariates" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input:
+    path peer from ch4
+    path gene_expr from gene_cols
+
+    output:
+    path "covariates.txt" into ch5
+    
+    script:
+    """
+    process_covariates.R ${peer} ${gene_expr} covariates.txt
+    """
+}
+
+process linear_regression {
+    tag "regression"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/regression" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input:
+
+    output:
+
+    script:
+    """
+
+    """
+
+}
+
+process generate_models {
+    tag "models"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input:
+
+    output:
+
+    script:
+    """
+    
+    """
+}
+
+
 
 // Check file extension
 def hasExtension(it, extension) {
