@@ -4,6 +4,7 @@ argv <- commandArgs(trailingOnly = TRUE)
 
 infile <- argv[1]
 outfile <- argv[2]
+outfile_row <- argv[3]
 
 # load modules
 suppressWarnings(suppressMessages(library(tidyverse)))
@@ -24,5 +25,5 @@ colnames(gene_exp_transpose) <- n
 
 # write out the transposed file in csv format
 write.table(gene_exp_transpose, file = outfile, sep = ",", col.names = TRUE, row.names = FALSE)
-
-
+# write with row names
+write.table(gene_exp_transpose, file = outfile_row, sep = ",", col.names = TRUE, row.names = TRUE)
