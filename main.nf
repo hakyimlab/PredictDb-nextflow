@@ -190,7 +190,7 @@ process split_annotation {
     path snp from snp_annot
 
     output:
-    path "snp_annot.*.txt" into ch2
+    path "snp_annot.*.txt" into snp_files
 
     script:
     """
@@ -206,7 +206,7 @@ process split_genotype {
     path genot from gene_split
 
     output:
-    path "genotype.*.txt" into ch3
+    path "genotype.*.txt" into genotype_files
 
     script:
     """
@@ -256,8 +256,8 @@ process generate_peer_factors {
     """
 }
 
-process covariate_processing {
-    tag "covariates"
+process linear_regression {
+    tag "regression"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/Covariates" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
@@ -266,27 +266,29 @@ process covariate_processing {
 
     output:
     path "covariates.txt" into ch5
+    path "transformed_expression.txt" into final_expr
     
     script:
     """
-    process_covariates.R ${peer} ${gene_expr} covariates.txt
+    process_covariates.R ${peer} ${gene_expr} covariates.txt transformed_expression.txt
     """
 }
 
-process linear_regression {
-    tag "regression"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/regression" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
-    input:
+// Map files for each chromosome together
+snp_files
+     .flatMap()
+     .map { file -> tuple(getChromID(file), file) }
+     .set { map_snp }
 
-    output:
+genotype_files
+     .flatMap()
+     .map { file -> tuple(getChromID(file), file) }
+     .set { map_genotype }
 
-    script:
-    """
+map_snp.join(map_genotype).set {snp_genotype_files}
 
-    """
+//snp_genotype_files.subscribe onNext: { println it }
 
-}
 
 process generate_models {
     tag "models"
@@ -294,17 +296,21 @@ process generate_models {
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
 
-    output:
 
+    output:
     script:
     """
-    
+
     """
 }
 
-
+// Get the chromosome number
+def getChromID( file ) {
+    file.name.toString().find(/(.chr)(\d+)(.txt)/) { match, pref, chrom, ext -> chrom }
+}
 
 // Check file extension
 def hasExtension(it, extension) {
     it.toString().toLowerCase().endsWith(extension.toLowerCase())
 }
+
