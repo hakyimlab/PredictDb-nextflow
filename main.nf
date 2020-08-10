@@ -174,7 +174,7 @@ process gene_annotation {
     path gtf from gene_annot
 
     output:
-    path "gene_annot.parsed.txt" into ch
+    path "gene_annot.parsed.txt" into parsed_annot
 
     script:
     """
@@ -265,7 +265,7 @@ process linear_regression {
     path gene_expr from gene_cols
 
     output:
-    path "covariates.txt" into ch5
+    path "covariates.txt" into covariate_file
     path "transformed_expression.txt" into final_expr
     
     script:
@@ -290,17 +290,20 @@ map_snp.join(map_genotype).set {snp_genotype_files}
 //snp_genotype_files.subscribe onNext: { println it }
 
 
-process generate_models {
-    tag "models"
+process model_training {
+    tag "training"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
-
+    file covariates from covariate_file
+    file expression from final_expr
+    file gene_annot from parsed_annot
+    tuple val(chrom), file(chr:'genotype_file'), file(chr:'snp_file') from snp_genotype_files
 
     output:
     script:
     """
-
+    ls -alh $chrom snp_file $gene_annot genotype_file $expression $covariates > copy
     """
 }
 
