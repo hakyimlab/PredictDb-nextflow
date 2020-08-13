@@ -222,12 +222,11 @@ process transpose_geneExpression {
     path geneExp from gene_expr
 
     output:
-    path "transposed_gene_exp.csv" into peers
-    path "transposed_gene_colnames.csv" into gene_cols
+    path "transposed_gene_exp.csv" into tr_expr, gene_cols 
 
     script:
     """
-    transpose_gene_expr.R ${geneExp} transposed_gene_exp.csv transposed_gene_colnames.csv
+    transpose_gene_expr.R ${geneExp} transposed_gene_exp.csv 
     wc -l transposed_gene_exp.csv | cut -d " " -f1 > count.txt
     """
 }
@@ -245,10 +244,10 @@ process generate_peer_factors {
     publishDir path: { params.keepIntermediate ? "${params.outdir}/PEER" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
-    path csv from peers
+    path csv from tr_expr
 
     output:
-    path "calculated_peers/X.csv" into ch4
+    path "calculated_peers/X.csv" into peers
 
     script:
     """
@@ -261,7 +260,7 @@ process linear_regression {
     publishDir path: { params.keepIntermediate ? "${params.outdir}/Covariates" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
-    path peer from ch4
+    path peer from peers
     path gene_expr from gene_cols
 
     output:
@@ -294,17 +293,50 @@ process model_training {
     tag "training"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    
     input:
-    file covariates from covariate_file
-    file expression from final_expr
-    file gene_annot from parsed_annot
-    tuple val(chrom), file(chr:'genotype_file'), file(chr:'snp_file') from snp_genotype_files
+    file covariates from covariate_file.first()
+    file expression from final_expr.first()
+    file gene_annot from parsed_annot.first()
+    tuple val(chrom), file(snp_file2:'snp_file'), file('genotype_file') from snp_genotype_files
 
     output:
+    file "weights/*" into ccch
+    file "summary/*" into ccchq
+    file "covariances/*" into ccchw
+    script:
+    prefix = params.prefix
+    """
+    mkdir -p summary weights covariances
+    gtex_v7_nested_cv_elnet.R $chrom snp_file $gene_annot genotype_file $expression $covariates $prefix
+    """
+}
+
+ccchq
+     .map { file -> tuple(getTrainID(file[0]), file[0], file[1]) }
+     .toSortedList({ a, b -> a[0] <=> b[0] })
+     .set { summaries }
+
+process make_databases {
+    tag "database"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+
+    input:
+    file files from summaries
+
+    output:
+    path "test.txt" into filter_dbs
+
     script:
     """
-    ls -alh $chrom snp_file $gene_annot genotype_file $expression $covariates > copy
+    echo $files > test.txt
     """
+}
+
+// Map the model training files together
+def getTrainID( file ) {
+    file.name.toString().find(/(.chr)(\d+)(_model_)/) { match, pref, chrom, ext -> chrom }
 }
 
 // Get the chromosome number
