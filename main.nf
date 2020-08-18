@@ -301,38 +301,100 @@ process model_training {
     tuple val(chrom), file(snp_file2:'snp_file'), file('genotype_file') from snp_genotype_files
 
     output:
-    file "weights/*" into ccch
-    file "summary/*" into ccchq
-    file "covariances/*" into ccchw
+    path "weights/*" into weight_summaries
+    path "summary/*" into model_summaries
+    path "chrom_summary/*" into chrom_summaries
+    path "covariances/*" into all_covariances
+
     script:
     prefix = params.prefix
     """
-    mkdir -p summary weights covariances
+    mkdir -p summary weights covariances chrom_summary
     gtex_v7_nested_cv_elnet.R $chrom snp_file $gene_annot genotype_file $expression $covariates $prefix
     """
 }
+
+/*
+ccchq.flatMap()
+     .collect()
+     .subscribe onNext: { println it }
+
 
 ccchq
      .map { file -> tuple(getTrainID(file[0]), file[0], file[1]) }
      .toSortedList({ a, b -> a[0] <=> b[0] })
      .set { summaries }
 
-process make_databases {
+*/
+process collectModel_summaries {
     tag "database"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
 
     input:
-    file files from summaries
+    path model from model_summaries.collect()
 
     output:
-    path "test.txt" into filter_dbs
+    path "Model_summary.txt" into all_model_sum
 
     script:
     """
-    echo $files > test.txt
+    model_summary.R $model*
     """
 }
+
+process collectWeight_summaries {
+    tag "database"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+
+    input:
+    path weight from weight_summaries.collect()
+
+    output:
+    path "Weight_summary.txt" into all_weight_sum
+
+    script:
+    """
+    weight_summary.R $weight*
+    """
+}
+
+process collectChrom_summaries {
+    tag "database"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+
+    input:
+    path chrom from chrom_summaries.collect()
+
+    output:
+    path "Chromosome_summary.txt" into all_chrom_sum
+
+    script:
+    """
+    chrom_summary.R $chrom*
+    """
+}
+
+process make_database {
+    tag "database"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+
+    input:
+    path models from all_model_sum
+    path weights from all_weight_sum
+    path chroms from all_chrom_sum
+
+    output:
+
+    script:
+    """
+    
+    """
+}
+
 
 // Map the model training files together
 def getTrainID( file ) {
