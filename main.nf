@@ -286,8 +286,6 @@ genotype_files
 
 map_snp.join(map_genotype).set {snp_genotype_files}
 
-//snp_genotype_files.subscribe onNext: { println it }
-
 
 process model_training {
     tag "training"
@@ -314,18 +312,6 @@ process model_training {
     """
 }
 
-/*
-ccchq.flatMap()
-     .collect()
-     .subscribe onNext: { println it }
-
-
-ccchq
-     .map { file -> tuple(getTrainID(file[0]), file[0], file[1]) }
-     .toSortedList({ a, b -> a[0] <=> b[0] })
-     .set { summaries }
-
-*/
 process collectModel_summaries {
     tag "database"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
@@ -388,17 +374,32 @@ process make_database {
     path chroms from all_chrom_sum
 
     output:
+    path "gtex_v7_${pop}.db" into filtering
 
     script:
+    pop = params.prefix
     """
-    
+    make_db.R ${models} ${weights} ${chroms} ${pop}
     """
 }
 
 
-// Map the model training files together
-def getTrainID( file ) {
-    file.name.toString().find(/(.chr)(\d+)(_model_)/) { match, pref, chrom, ext -> chrom }
+process filter_database {
+    tag "database"
+    publishDir path: "${params.outdir}/filtered_db",
+               saveAs: it, mode: 'copy'
+
+    input:
+    path all_db from filtering
+
+    output:
+    path "gtex_v7_${pop}_filtered_signif.db" into filtered
+
+    script:
+    pop = params.prefix
+    """
+    filter_db.R ${all_db} gtex_v7_${pop}_filtered_signif.db
+    """
 }
 
 // Get the chromosome number
