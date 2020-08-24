@@ -222,12 +222,12 @@ process transpose_geneExpression {
     path geneExp from gene_expr
 
     output:
-    path "transposed_gene_exp.csv" into tr_expr, gene_cols 
+    tuple stdout, path("transposed_gene_exp.csv") into tr_expr, gene_cols 
 
     script:
     """
     transpose_gene_expr.R ${geneExp} transposed_gene_exp.csv 
-    wc -l transposed_gene_exp.csv | cut -d " " -f1 > count.txt
+    wc -l transposed_gene_exp.csv | cut -d " " -f1 | tr -d \'\\n\'
     """
 }
 
@@ -244,15 +244,35 @@ process generate_peer_factors {
     publishDir path: { params.keepIntermediate ? "${params.outdir}/PEER" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
-    path csv from tr_expr
+    tuple val(tcount), file(csv:'transposed_file.csv') from tr_expr
 
     output:
     path "calculated_peers/X.csv" into peers
 
     script:
-    """
-    peertool -f ${csv} -n 5 --has_header -o calculated_peers
-    """
+    no_samples = tcount.toInteger() - 1
+    if( no_samples > 0 && no_samples < 150 )
+        """
+        peertool -f ${csv} -n 15 --has_header -o calculated_peers
+        """
+
+    else if( no_samples >= 150 && no_samples < 250 )
+        """
+        peertool -f ${csv} -n 30 --has_header -o calculated_peers
+        """
+
+    else if( no_samples >= 250 && no_samples < 350 )
+        """
+        peertool -f ${csv} -n 45 --has_header -o calculated_peers
+        """
+
+    else if( no_samples >= 350 )
+        """
+        peertool -f ${csv} -n 60 --has_header -o calculated_peers
+        """
+
+    else
+        error "Invalid number of samples in gene expression file: ${no_samples}"
 }
 
 process linear_regression {
@@ -261,7 +281,7 @@ process linear_regression {
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
     path peer from peers
-    path gene_expr from gene_cols
+    tuple val(tcount), file(gene_expr:'transposed_file') from gene_cols
 
     output:
     path "covariates.txt" into covariate_file
