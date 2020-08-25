@@ -16,14 +16,22 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run main.nf --gtf 'vcffile.vcf' --gene_annot 'gene_annnotation_file'
+    nextflow run main.nf --gtf 'gene_annot.vcf' --snp 'snp_annnotation_file' --genotype 'genotype_file' --gene_expr 'Normalized_gene expression'
     
 
     Mandatory arguments:
-        --gtf
-        --snp
-        --genotype
-        --gene_exp
+        --gtf [file]
+        --snp [file]
+        --genotype [file]
+        --gene_exp [file]
+
+    Options:
+      --keepIntermediate [bool]              
+      --population [str]
+      --outdir [str]
+
+                 
+
     """.stripIndent()
 }
 
@@ -32,6 +40,31 @@ if (params.help) {
     helpMessage()
     exit 0
 }
+
+// catching both -name and --name if specified by user
+custom_runName = params.name
+if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
+    custom_runName = workflow.runName
+}
+
+//Header log info
+def summary = [:]
+if (workflow.revision) summary['Pipeline Release'] = workflow.revision
+summary['Run Name']              = custom_runName ?: workflow.runName
+summary['Gene annotation']       = params.gtf
+summary['SNP annotation']        = params.snp
+summary['Expression file']       = params.gene_exp
+summary['Genotype file']         = params.genotype
+summary['Max Resources']         = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
+summary['Output dir']            = params.outdir
+summary['Launch dir']            = workflow.launchDir
+summary['Working dir']           = workflow.workDir
+summary['Script dir']            = workflow.projectDir
+summary['User']                  = workflow.userName
+
+log.info summary.collect { k,v -> "${k.padRight(18)}: $v" }.join("\n")
+log.info "-\033[2m--------------------------------------------------\033[0m-"
+
 
 // Validate input files
 if (params.gtf) {
@@ -281,7 +314,7 @@ process linear_regression {
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
     path peer from peers
-    tuple val(tcount), file(gene_expr:'transposed_file') from gene_cols
+    tuple val(tcount), file(gene_expr:'transposed_file.csv') from gene_cols
 
     output:
     path "covariates.txt" into covariate_file
