@@ -129,6 +129,8 @@ If not provided it will use the provided generic name and will overwrite the ini
 
 Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.
 
+**NB:** Ensure mail or sendmail is set up correctly in your host before using this argument.
+
 ### `--email_on_fail`
 
 This works exactly as with `--email`, except emails are only sent if the workflow is not successful.
@@ -137,7 +139,7 @@ This works exactly as with `--email`, except emails are only sent if the workflo
 
 Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
-This is used in the MultiQC report (if not default) and in the summary HTML / e-mail (always).
+This is used in the summary HTML / e-mail (always).
 
 **NB:** Single hyphen (core Nextflow option)
 
