@@ -8,17 +8,27 @@ outfile <- argv[2]
 # load modules
 suppressWarnings(suppressMessages(library(tidyverse)))
 
-# Read in the data
-gene_exp = read.table(file = infile, header = TRUE, sep = "\t" )
+# Read in the data in a flexible manner
+if (grepl("\\.txt$", infile)) {
+  gene_exp = read.table(file = infile, header = TRUE, sep = "\t" )
+} else if (grepl("\\.tsv$", infile)) {
+  gene_exp = read.table(file = infile, header = TRUE, sep = "\t" )
+} else if (grepl("\\.csv$", infile)) {
+  gene_exp <- read.csv(infile, header = TRUE)
+} else {
+  stop("Invalid file format, check the extension")
+}
 
 # Drop columns we don't need in the gene expression dataframe
-gene_exp = gene_exp[-c(1, 3, 4)]
+drop_cols <- c("Chr","TargetID","Coord")
+
+gene_exp <- gene_exp[,!(names(gene_exp) %in% drop_cols)]
 
 # Rename column one
-gene_exp = rename(gene_exp, 'NAME' = Gene_Symbol)
+gene_exp <- gene_exp %>% rename(Gene_name = names(.)[1])
 
 # transpose the gene expression matrix
-n = gene_exp$NAME
+n = gene_exp$Gene_name
 gene_exp_transpose <- as.data.frame(t(gene_exp[,-1]))
 colnames(gene_exp_transpose) <- n
 
