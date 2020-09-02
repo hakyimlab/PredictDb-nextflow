@@ -1,3 +1,17 @@
+#! /usr/bin/env Rscript
+
+argv <- commandArgs(trailingOnly = TRUE)
+
+
+chrom <- argv[1]
+snp_annot_file <- argv[2]
+gene_annot_file <- argv[3]
+genotype_file <- argv[4]
+expression_file <- argv[5]
+covariates_file <- argv[6]
+prefix <- argv[7]
+
+
 suppressMessages(library(dplyr))
 suppressMessages(library(glmnet))
 suppressMessages((library(reshape2)))
@@ -173,7 +187,7 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
   snp_annot <- get_filtered_snp_annot(snp_annot_file)
   gt_df <- get_maf_filtered_genotype(genotype_file, maf, samples)
   covariates_df <- get_covariates(covariates_file, samples)
-
+  
   # Set seed----
   seed <- ifelse(is.na(seed), sample(1:1000000, 1), seed)
   set.seed(seed)
@@ -190,7 +204,7 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
   weights_col <- c('gene_id', 'rsid', 'varID', 'ref', 'alt', 'beta')
   write(weights_col, file = weights_file, ncol = 6, sep = '\t')
   
-  tiss_chr_summ_f <- './summary/' %&% prefix %&% '_chr' %&% chrom %&% '_tiss_chr_summary.txt'
+  tiss_chr_summ_f <- './chrom_summary/' %&% prefix %&% '_chr' %&% chrom %&% '_summary.txt'
   tiss_chr_summ_col <- c('n_samples', 'chrom', 'cv_seed', 'n_genes')
   tiss_chr_summ <- data.frame(n_samples, chrom, seed, n_genes)
   colnames(tiss_chr_summ) <- tiss_chr_summ_col
@@ -288,3 +302,6 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
     write(model_summary, file = model_summary_file, append = TRUE, ncol = 24, sep = '\t')
   }
 }
+
+#Run analysis
+main(snp_annot_file, gene_annot_file, genotype_file, expression_file, covariates_file, as.numeric(chrom), prefix, null_testing=FALSE)
