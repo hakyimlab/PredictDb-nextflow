@@ -16,21 +16,22 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run main.nf --gtf 'gene_annot.vcf' --snp 'snp_annnotation_file' --genotype 'genotype_file' --gene_expr 'Normalized_gene expression'
+    nextflow run main.nf --gene_annotation 'gene_annot.gtf' --snp_annotation 'snp_annnotation_file.vcf' --genotype 'genotype_file.txt' --gene_exp 'Normalized_gene expression.txt'
     
 
     Mandatory arguments:
-        --gtf [file]
-        --snp [file]
-        --genotype [file]
-        --gene_exp [file]
+       --gene_annotation [file]		Path to the gene annotation file .gtf format (must be surrounded with quotes)
+       --snp_annotation [file]		Path to the SNP annotation file .vcf or .txt format (must be surrounded with quotes)
+       --genotype [file]			Path to the dosage file .txt format and TAB separated (must be surrounded with quotes)
+       --gene_exp [file]			Path to the gene expression file .csv,.txt or .tsv format (must be surrounded with quotes)
 
     Options:
-      --keepIntermediate [bool]              
-      --population [str]
-      --outdir [str]
-
-                 
+       --keepIntermediate [bool]		Specifies if you want to keep intermediate files
+       --prefix [str]			The prefix of your output files, we recommend using the population name used in the training. If not provided default name is used
+       --outdir [file]			The output directory where the results will be saved
+       --email [email]			Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
+       --email_on_fail [email]		Same as --email, except only send mail if the workflow is not successful
+       -name [str]				Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
 
     """.stripIndent()
 }
@@ -51,8 +52,8 @@ if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
 def summary = [:]
 if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Run Name']              = custom_runName ?: workflow.runName
-summary['Gene annotation']       = params.gtf
-summary['SNP annotation']        = params.snp
+summary['Gene annotation']       = params.gene_annotation
+summary['SNP annotation']        = params.snp_annotation
 summary['Expression file']       = params.gene_exp
 summary['Genotype file']         = params.genotype
 summary['Max Resources']         = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
@@ -61,33 +62,37 @@ summary['Launch dir']            = workflow.launchDir
 summary['Working dir']           = workflow.workDir
 summary['Script dir']            = workflow.projectDir
 summary['User']                  = workflow.userName
+if (params.email || params.email_on_fail) {
+    summary['E-mail Address']    = params.email
+    summary['E-mail on failure'] = params.email_on_fail
+}
 
 log.info summary.collect { k,v -> "${k.padRight(18)}: $v" }.join("\n")
 log.info "-\033[2m--------------------------------------------------\033[0m-"
 
 
 // Validate input files
-if (params.gtf) {
- if (hasExtension(params.gtf, 'gz')) {
+if (params.gene_annotation) {
+ if (hasExtension(params.gene_annotation, 'gz')) {
   gtf_gz = Channel
-        .fromPath(params.gtf, checkIfExists: true)
-        .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
+        .fromPath(params.gene_annotation, checkIfExists: true)
+        .ifEmpty { exit 1, "GTF annotation file not found: ${params.gene_annotation}" }
   } else {
   gene_annot = Channel
-        .fromPath(params.gtf, checkIfExists: true)
-        .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
+        .fromPath(params.gene_annotation, checkIfExists: true)
+        .ifEmpty { exit 1, "GTF annotation file not found: ${params.gene_annotation}" }
   }
 }
 
-if (params.snp) {
- if (hasExtension(params.snp, 'gz')) {
+if (params.snp_annotation) {
+ if (hasExtension(params.snp_annotation, 'gz')) {
   snp_gz = Channel
-        .fromPath(params.snp, checkIfExists: true)
-        .ifEmpty { exit 1, "SNP annotation file not found: ${params.snp}" }
+        .fromPath(params.snp_annotation, checkIfExists: true)
+        .ifEmpty { exit 1, "SNP annotation file not found: ${params.snp_annotation}" }
   } else {
   snp_annot = Channel
-        .fromPath(params.snp, checkIfExists: true)
-        .ifEmpty { exit 1, "SNP annotation file not found: ${params.snp}" }
+        .fromPath(params.snp_annotation, checkIfExists: true)
+        .ifEmpty { exit 1, "SNP annotation file not found: ${params.snp_annotation}" }
   }
 }
 
@@ -121,7 +126,7 @@ if (params.gene_exp) {
  * -------------------------------------------------
  */
 
-if (params.gtf && hasExtension(params.gtf, 'gz')) {
+if (params.gene_annotation && hasExtension(params.gene_annotation, 'gz')) {
     process gunzip_gtf {
         tag "$gz"
         publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
@@ -139,7 +144,7 @@ if (params.gtf && hasExtension(params.gtf, 'gz')) {
     }
 }
 
-if (params.snp && hasExtension(params.snp, 'gz')) {
+if (params.snp_annotation && hasExtension(params.snp_annotation, 'gz')) {
     process gunzip_annot {
         tag "$gz"
         publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
