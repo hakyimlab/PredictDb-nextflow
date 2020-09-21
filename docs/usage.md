@@ -6,10 +6,10 @@
 * [Introduction](#introduction)
 * [Running the pipeline](#running-the-pipeline)
 * [Main arguments](#main-arguments)
-  * [`--gene_annot`](#--gene_annot)
-  * [`--snp_annot`](#--snp_annot)
+  * [`--gene_annotation`](#--gene_annotation)
+  * [`--snp_annotation`](#--snp_annotation)
   * [`--genotype`](#--genotype)
-  * [`--gene_expr`](#--gene_expr)
+  * [`--gene_exp`](#--gene_exp)
 * [Other command line parameters](#other-command-line-parameters)
   * [`--outdir`](#--outdir)
   * [`--keepIntermediate`](#--keepIntermediate)
@@ -42,7 +42,7 @@ NXF_OPTS='-Xms1g -Xmx4g'
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run main.nf --gene_annot 'gene_annot.vcf' --snp_annot 'snp_annnotation_file' --genotype 'genotype_file' --gene_expr 'Normalized_gene expression'
+nextflow run main.nf --gene_annotation 'gene_annot.gtf' --snp_annot 'snp_annnotation_file.vcf' --genotype 'genotype_file' --gene_exp 'Normalized_gene expression.csv'
 ```
 
 This will launch the pipeline with using the local executor.
@@ -58,7 +58,7 @@ results         # Finished results (configurable, see below)
 
 ## Main arguments
 
-### `--gene_annot`
+### `--gene_annotation`
 
 Use this to specify the location of your input gene annotation file. For example:
 
@@ -72,7 +72,7 @@ Please note the following requirements:
 2. The gene annotation file should contain annotations for all genes in 22 chromosomes
 3. The gene annotation file should follow this format described [here]()
 
-### `--snp_annot`
+### `--snp_annotation`
 
 Use this to specify the location of your input SNP annotation file. For example:
 
@@ -82,7 +82,7 @@ Use this to specify the location of your input SNP annotation file. For example:
 
 1. The path must be enclosed in quotes
 2. The SNP annotation file should contain annotations for all genes in 22 chromosomes
-3. The SNP annotation file should follow this format described [here]()
+3. The SNP annotation file should follow this format described [here](https://github.com/hakyimlab/PredictDb-nextflow/blob/master/docs/file_descriptions.md#snp-annotation-file)
 
 ### `--genotype`
 
@@ -93,18 +93,18 @@ Use this to specify the location of your genotype/dosage file. For example:
 ```
 1. The genotype file contains the dosage of each sample for the specific varID and must be provided
 2. It should have samples on the columns and the varID on the rows
-3. Further description can be found [here]()
+3. Further description can be found [here](https://github.com/hakyimlab/PredictDb-nextflow/blob/master/docs/file_descriptions.md#genotype-file)
 
-### `--gene_expr`
+### `--gene_exp`
 
 Use this to specify your gene expression file. For example:
 
 ```bash
---gene_expr 'path/to/gene_expression_file.txt'
+--gene_exp 'path/to/gene_expression_file.txt'
 ```
 1. The gene expression file must be normalized
 2. Samples should  be on the columns while TargetID are on the rows
-3. More indepth description of the gene expression file and preprocesing can be found [here]()
+3. More indepth description of the gene expression file and preprocesing can be found [here](https://github.com/hakyimlab/PredictDb-nextflow/blob/master/docs/file_descriptions.md#gene-expression-file)
 
 
 ## Other command line parameters
