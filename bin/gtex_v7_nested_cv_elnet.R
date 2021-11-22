@@ -10,17 +10,23 @@ genotype_file <- argv[4]
 expression_file <- argv[5]
 covariates_file <- argv[6]
 prefix <- argv[7]
-
+n_folds <- as.numeric(argv[8])
 
 suppressMessages(library(dplyr))
 suppressMessages(library(glmnet))
 suppressMessages((library(reshape2)))
 suppressMessages(library(methods))
+suppressMessages(library(tools))
 "%&%" <- function(a,b) paste(a,b, sep = "")
 
 
 get_filtered_snp_annot <- function(snp_annot_file_name) {
-  snp_annot <- read.table(snp_annot_file_name, header = T, stringsAsFactors = F) %>%
+  snp_annot <- read.table(snp_annot_file_name, header = T, stringsAsFactors = F) 
+  
+  if("refAllele" %in% names(snp_annot)) {snp_annot <- snp_annot %>% rename(ref_vcf = refAllele)}
+  if("effectAllele" %in% names(snp_annot)) {snp_annot <- snp_annot %>% rename(alt_vcf = effectAllele)}
+
+  snp_annot <- snp_annot %>%
     filter(!((ref_vcf == 'A' & alt_vcf == 'T') |
                (ref_vcf == 'T' & alt_vcf == 'A') |
                (ref_vcf == 'C' & alt_vcf == 'G') |
@@ -41,17 +47,22 @@ get_maf_filtered_genotype <- function(genotype_file_name,  maf, samples) {
 
 get_gene_annotation <- function(gene_annot_file_name, chrom, gene_types=c('protein_coding', 'pseudogene', 'lincRNA')){
   gene_df <- read.table(gene_annot_file_name, header = TRUE, stringsAsFactors = FALSE) %>%
-    filter((chr == chrom) & gene_type %in% gene_types)
+    filter((chr == chrom) & gene_type %in% gene_types) %>% 
+    mutate(gene_id = file_path_sans_ext(gene_id))  # remove gene ver from gene names
   gene_df
 }
 
 get_gene_type <- function(gene_annot, gene) {
+  gene_annot <- gene_annot %>% mutate(gene_id = file_path_sans_ext(gene_id))
+  gene
+  head(gene_annot)
   filter(gene_annot, gene_id == gene)$gene_type
 }
 
 get_gene_expression <- function(gene_expression_file_name, gene_annot) {
   expr_df <- as.data.frame(t(read.table(gene_expression_file_name, header = T, stringsAsFactors = F, row.names = 1)))
   expr_df <- expr_df %>% t() %>% as.data.frame()
+  colnames(expr_df) <- file_path_sans_ext(colnames(expr_df)) # remove gene version number
   expr_df <- expr_df %>% select(one_of(intersect(gene_annot$gene_id, colnames(expr_df))))
   expr_df
 }
@@ -304,4 +315,4 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
 }
 
 #Run analysis
-main(snp_annot_file, gene_annot_file, genotype_file, expression_file, covariates_file, as.numeric(chrom), prefix, null_testing=FALSE)
+main(snp_annot_file, gene_annot_file, genotype_file, expression_file, covariates_file, as.numeric(chrom), prefix,n_folds=n_folds, null_testing=FALSE)
