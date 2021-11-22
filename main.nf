@@ -26,6 +26,7 @@ def helpMessage() {
        --gene_exp [file]			Path to the gene expression file .csv,.txt or .tsv format (must be surrounded with quotes)
 
     Options:
+       --nfolds				The number of folds to split your data into. The default is 10
        --keepIntermediate [bool]		Specifies if you want to keep intermediate files
        --prefix [str]			The prefix of your output files, we recommend using the population name used in the training. If not provided default name is used
        --outdir [file]			The output directory where the results will be saved
@@ -139,7 +140,7 @@ if (params.gene_annotation && hasExtension(params.gene_annotation, 'gz')) {
 
         script:
         """
-        gunzip -k --verbose --stdout --force ${gz} > ${gz.baseName}
+        gunzip --verbose --stdout --force ${gz} > ${gz.baseName}
         """
     }
 }
@@ -157,7 +158,7 @@ if (params.snp_annotation && hasExtension(params.snp_annotation, 'gz')) {
 
         script:
         """
-        gunzip -k --verbose --stdout --force ${gz} > ${gz.baseName}
+        gunzip --verbose --stdout --force ${gz} > ${gz.baseName}
         """
     }
 }
@@ -175,7 +176,7 @@ if (params.genotype && hasExtension(params.genotype, 'gz')) {
 
         script:
         """
-        gunzip -k --verbose --stdout --force ${gz} > ${gz.baseName}
+        gunzip --verbose --stdout --force ${gz} > ${gz.baseName}
         """
     }
 }
@@ -193,7 +194,7 @@ if (params.gene_exp && hasExtension(params.gene_exp, 'gz')) {
 
         script:
         """
-        gunzip -k --verbose --stdout --force ${gz} > ${gz.baseName}
+        gunzip --verbose --stdout --force ${gz} > ${gz.baseName}
         """
     }
 }
@@ -323,11 +324,12 @@ process linear_regression {
 
     output:
     path "covariates.txt" into covariate_file
-    path "transformed_expression.txt" into final_expr
+    path "residual_expression.txt" into final_residual
+    path "final_expression.txt" into final_expr
     
     script:
     """
-    process_covariates.R ${peer} ${gene_expr} covariates.txt transformed_expression.txt
+    process_covariates.R ${peer} ${gene_expr} covariates.txt final_expression.txt residual_expression.txt
     """
 }
 
@@ -364,9 +366,10 @@ process model_training {
 
     script:
     prefix = params.prefix
+    nfolds = params.nfolds
     """
     mkdir -p summary weights covariances chrom_summary
-    gtex_v7_nested_cv_elnet.R $chrom snp_file $gene_annot genotype_file $expression $covariates $prefix
+    gtex_v7_nested_cv_elnet.R $chrom snp_file $gene_annot genotype_file $expression $covariates $prefix $nfolds
     """
 }
 
