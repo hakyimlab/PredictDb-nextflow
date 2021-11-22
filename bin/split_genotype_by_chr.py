@@ -57,6 +57,8 @@ def split_genotype(geno_file, out_prefix):
                 continue
             snps.add(varID)
             # Write line to appropriate file
+            if "chr" in chr:
+                chr = chr.replace("chr", "")
             index = int(chr) - 1
             geno_by_chr[index].write(line)
 
