@@ -14,7 +14,7 @@ driver <- dbDriver("SQLite")
 in_conn <- dbConnect(driver, unfiltered_db)
 out_conn <- dbConnect(driver, filtered_db)
 model_summaries <- dbGetQuery(in_conn, 'select * from model_summaries where zscore_pval < 0.05 and rho_avg > 0.1')
-model_summaries <- model_summaries %>% 
+model_summaries <- model_summaries %>% filter(n_snps_in_model > 0) %>%
 	                rename(pred.perf.R2 = rho_avg_squared, genename = gene_name, pred.perf.pval = zscore_pval, n.snps.in.model = n_snps_in_model)
 model_summaries$pred.perf.qval <- NA
 dbWriteTable(out_conn, 'extra', model_summaries, overwrite = TRUE)
