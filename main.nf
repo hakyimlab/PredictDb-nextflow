@@ -386,7 +386,7 @@ process collectModel_summaries {
 
     script:
     """
-    model_summary.R $model*
+    model_summary.R $model
     """
 }
 
@@ -403,7 +403,7 @@ process collectWeight_summaries {
 
     script:
     """
-    weight_summary.R $weight*
+    weight_summary.R $weight
     """
 }
 
@@ -420,7 +420,7 @@ process collectChrom_summaries {
 
     script:
     """
-    chrom_summary.R $chrom*
+    chrom_summary.R $chrom
     """
 }
 
