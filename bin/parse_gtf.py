@@ -33,8 +33,14 @@ def parse_gtf(gtf_path, out_path):
             start = gene_fields[3]
             end = gene_fields[4]
             id = attr_dict['gene_id'].strip('"')
-            name = attr_dict['gene_name'].strip('"')
-            type = attr_dict['gene_type'].strip('"')
+            if 'gene_name' in attr_dict.keys():
+                name = attr_dict['gene_name'].strip('"')
+            else:
+                name = "NA"
+            if 'gene_type' in attr_dict.keys():
+                type = attr_dict['gene_type'].strip('"')
+            else:
+                type = attr_dict['gene_biotype'].strip('"').strip('";')
             # Concatenate together and write out to file.
             out_line = '\t'.join([chr, id, name, start, end, type]) + '\n'
             out.write(out_line)
