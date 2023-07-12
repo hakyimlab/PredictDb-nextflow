@@ -33,13 +33,49 @@ def parse_gtf(gtf_path, out_path):
             start = gene_fields[3]
             end = gene_fields[4]
             id = attr_dict['gene_id'].strip('"')
-            name = attr_dict['gene_name'].strip('"')
-            type = attr_dict['gene_type'].strip('"')
+            if 'gene_name' in attr_dict.keys():
+                name = attr_dict['gene_name'].strip('"')
+            else:
+                name = "NA"
+            if 'gene_type' in attr_dict.keys():
+                type = attr_dict['gene_type'].strip('"')
+            else:
+                type = attr_dict['gene_biotype'].strip('"').strip('";')
             # Concatenate together and write out to file.
             out_line = '\t'.join([chr, id, name, start, end, type]) + '\n'
             out.write(out_line)
 
+def check_file_header(filename):
+    
+    with open(filename, 'r') as file:
+        # Read the first line of the file
+        first_line = file.readline().strip()
+        
+        # Split the first line into individual headers
+        headers = first_line.split('\t')
+        
+        # Check if all required headers are present
+        if all(field in headers for field in HEADER_FIELDS):
+            return True
+        else:
+            return False
+
+
+def copy_file(source_file, destination_file):
+    with open(source_file, 'r') as source:
+        with open(destination_file, 'w') as destination:
+            # Read the contents of the source file
+            file_contents = source.read()
+            
+            # Write the contents to the destination file
+            destination.write(file_contents)
+
+
 if __name__ == '__main__':
     gtf_path = sys.argv[1]
     out_path = sys.argv[2]
-    parse_gtf(gtf_path, out_path)
+
+    if check_file_header(gtf_path):
+        copy_file(gtf_path, out_path)
+    else:
+        parse_gtf(gtf_path, out_path)
