@@ -244,6 +244,8 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
       expression_vec <- expr_df[,i]
       adj_expression <- adjust_for_covariates(expression_vec, covariates_df)
       adj_expression <- as.matrix(adj_expression[(rownames(adj_expression) %in% rownames(cis_gt)),])
+      # sort row names to be in the same order for X and y
+      cis_gt = cis_gt[match(rownames(adj_expression), rownames(cis_gt)),]
       if (null_testing)
         adj_expression <- sample(adj_expression)
       perf_measures <- nested_cv_elastic_net_perf(cis_gt, adj_expression, n_samples, n_train_test_folds, n_folds, alpha, samples)

@@ -5,12 +5,12 @@ suppressMessages(library(dplyr))
 args <- commandArgs(trailingOnly = TRUE)
 
 # Initialize a database with column names
-model_summaries <- read.table(args[1], header = T, stringsAsFactors = F)
+model_summaries <- read.table(args[1], header = T, stringsAsFactors = F, fill = T)
 model_summaries <- model_summaries[FALSE,]
 
 for (arg in args) {
 	model_summaries <- rbind(model_summaries,
-                             read.table(arg, header = T, stringsAsFactors = F))
+                             read.table(arg, header = T, stringsAsFactors = F,fill =T))
 }
 
 model_summaries <- rename(model_summaries, gene = gene_id)
