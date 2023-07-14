@@ -55,7 +55,7 @@ process process_peer_factors {
 }
 
 process generate_pcs {
-    tag "PEER Factors"
+    tag "Principal Components"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/Covariates" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input: 

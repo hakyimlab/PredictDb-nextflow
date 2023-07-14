@@ -14,7 +14,7 @@ gene_exp_transpose <- read.csv(file = gene_expr, header = TRUE)
 gene_pcs <- prcomp(gene_exp_transpose, scale. = F, center = T)
 
 # extract the top 10 PCs
-pcs <- metabo_mean_pcs$x
+pcs <- gene_pcs$x
 pcs <- pcs[,1:10]
 rownames(pcs) <- rownames(gene_exp_transpose)
 
