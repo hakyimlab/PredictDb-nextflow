@@ -6,7 +6,7 @@ process generate_peer_factors {
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input: 
     path csv
-    tcount
+    val tcount
 
     output:
     path "calculated_peers/X.csv", emit: peers
@@ -39,33 +39,50 @@ process generate_peer_factors {
 
 process process_peer_factors {
     tag "PEER Factors"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/Covariates" : false },
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
     path peer 
     path gene_expr
 
     output:
-    path "covariates.txt", emit: covariate_file
+    path "peer_covariates.txt", emit: covariate_file
     
     script:
     """
-    process_covariates.R ${peer} ${gene_expr} covariates.txt
+    process_covariates.R ${peer} ${gene_expr} peer_covariates.txt
     """
 }
 
 process generate_pcs {
     tag "Principal Components"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/Covariates" : false },
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input: 
     path gene_expr
 
     output:
-    path "covariates.txt", emit: covariate_file
+    path "pca_covariates.txt", emit: covariate_file
     
     script:
     """
-    generate_pcs.R ${gene_expr} covariates.txt
+    generate_pcs.R ${gene_expr} pca_covariates.txt
+    """
+}
+
+process combine_covs {
+    tag "Combining all covariates"
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
+               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    input: 
+    path computed_covs
+    path provided_covs
+
+    output:
+    path "all_covariates.txt", emit: covariate_file
+    
+    script:
+    """
+    combine_covariates.R ${computed_covs} ${provided_covs}  all_covariates.txt
     """
 }

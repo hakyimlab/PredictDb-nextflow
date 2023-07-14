@@ -32,7 +32,8 @@ include {collectModel_summaries;
 
 include {generate_peer_factors;
             process_peer_factors;
-            generate_pcs} from '../modules/covariates.nf' addParams(outdir: "${params.outdir}") 
+            generate_pcs;
+            combine_covs} from '../modules/covariates.nf' addParams(outdir: "${params.outdir}") 
 
 
 workflow UNZIP {
@@ -88,7 +89,7 @@ workflow COVS {
 	    if(params.peer) {
 	        log.info "Using PEER to calculate covariates"
             generate_peer_factors(geneExp,samp_size)
-            covs = process_peer_factors(generate_peer_factors.out.peer_factors,geneExp)
+            covs = process_peer_factors(generate_peer_factors.out.peers,geneExp)
 
         }
         else if (params.pca){
@@ -105,15 +106,17 @@ workflow COVS {
 workflow COMBINE_COVS {
     take:
         computed_covs
+        p_covs
     main:
         if(params.peer && params.covariates || params.pca && params.covariates) {
-            println "combine covariates"
+            println "Using both computed and provided covariates"
+            covs = combine_covs(computed_covs,p_covs)
         }
         else if (params.covariates){
-            println "use only available covariates"
-            covs = null
+            println "Using the provided covariates"
+            covs = p_covs
         } else if (params.peer || params.pca){
-            println "use either peer or pca covariates"
+            println "Using the computed (peer/pca) covariates"
             covs = computed_covs
         } else {
             covs = null

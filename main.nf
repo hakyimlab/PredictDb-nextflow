@@ -101,8 +101,9 @@ geneExp = Channel
     .fromPath(params.gene_exp, checkIfExists: true)
     .ifEmpty { exit 1, "Gene expression file not found: ${params.gene_exp}" }
 
+p_covs = null
 if (params.covariates) {
-    covs = Channel
+    p_covs = Channel
         .fromPath(params.covariates, checkIfExists: true)
         .ifEmpty { exit 1, "Covariates file not found: ${params.covariates}" }
 }
@@ -122,7 +123,7 @@ workflow {
       UNZIP(gtf,snp_annot,genotype,geneExp)
       PREPROCESS(UNZIP.out.gtf,UNZIP.out.snp_annot,UNZIP.out.genotype,UNZIP.out.geneExp)
       COVS(PREPROCESS.out.tr_expr_peer,PREPROCESS.out.tr_expr_count)
-      COMBINE_COVS(COVS.out.covs)
+      COMBINE_COVS(COVS.out.covs,p_covs)
       TRAIN_MODEL(PREPROCESS.out.gene_annot,PREPROCESS.out.snp_files,
                   PREPROCESS.out.genotype_files,PREPROCESS.out.tr_expr,COMBINE_COVS.out.covs)
       CREATE_DB(TRAIN_MODEL.out.chrom_summaries.collect(),
