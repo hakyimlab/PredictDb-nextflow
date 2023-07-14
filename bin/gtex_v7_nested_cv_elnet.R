@@ -1,16 +1,45 @@
 #! /usr/bin/env Rscript
+suppressMessages(library(optparse))
 
-argv <- commandArgs(trailingOnly = TRUE)
+# create options
+option_list <- list(
+  make_option(c("--chrom"), type="character", default=NULL,
+              help="The chromosome you are processing",
+              metavar="numeric"),
+  make_option(c("--snp_annotation"), type="character", default=NULL,
+              help="The snp annotation file for the chromosome you are processing",
+              metavar="character"),
+  make_option(c("--gene_annotation"), type="character", default=NULL,
+              help="The gene annotation file for the chromosome you are processing",
+              metavar="character"),
+  make_option(c("--genotype_file"), type="character", default=NULL,
+              help="The genotype file for the chromosome you are processing",
+              metavar="character"),
+  make_option(c("--gene_expression"), type="character", default=NULL,
+              help="The gene expression file",
+              metavar="character"),
+  make_option(c("--covariates_file"), type="character", default=NULL,
+              help="The covariates file",
+              metavar="character"),
+  make_option(c("--prefix"), type="character", default="elastic_net_cv",
+              help="The prefix for the output files",
+              metavar="character"),
+  make_option(c("--nfolds"), type="numeric", default=10,
+              help="The number of folds for the nested cross validation",
+              metavar="numeric"))
+
+opt_parser <- OptionParser(option_list=option_list)
+args <- parse_args(opt_parser)
 
 
-chrom <- argv[1]
-snp_annot_file <- argv[2]
-gene_annot_file <- argv[3]
-genotype_file <- argv[4]
-expression_file <- argv[5]
-covariates_file <- argv[6]
-prefix <- argv[7]
-n_folds <- as.numeric(argv[8])
+chrom <- args$chrom
+snp_annot_file <- args$snp_annotation
+gene_annot_file <- args$gene_annotation
+genotype_file <- args$genotype_file
+expression_file <- args$gene_expression
+covariates_file <- args$covariates_file
+prefix <- args$prefix
+n_folds <- as.numeric(args$nfolds)
 
 suppressMessages(library(dplyr))
 suppressMessages(library(glmnet))
@@ -197,8 +226,11 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
   n_genes <- length(expr_df)
   snp_annot <- get_filtered_snp_annot(snp_annot_file)
   gt_df <- get_maf_filtered_genotype(genotype_file, maf, samples)
-  covariates_df <- get_covariates(covariates_file, samples)
+  if (!is.null(args$covariates_file)) {
+    covariates_df <- get_covariates(covariates_file, samples)
+  }
   
+
   # Set seed----
   seed <- ifelse(is.na(seed), sample(1:1000000, 1), seed)
   set.seed(seed)
@@ -242,7 +274,13 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
     model_summary <- c(gene, gene_name, gene_type, alpha, ncol(cis_gt), 0, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
     if (ncol(cis_gt) >= 2) {
       expression_vec <- expr_df[,i]
-      adj_expression <- adjust_for_covariates(expression_vec, covariates_df)
+      if (is.null(args$covariates_file)) {
+        adj_expression <- as.matrix(expression_vec)
+        rownames(adj_expression) <- rownames(expr_df)
+      } else {
+        adj_expression <- adjust_for_covariates(expression_vec, covariates_df)
+      }
+      # Filter out samples that are in both expression and genotype data.
       adj_expression <- as.matrix(adj_expression[(rownames(adj_expression) %in% rownames(cis_gt)),])
       # sort row names to be in the same order for X and y
       cis_gt = cis_gt[match(rownames(adj_expression), rownames(cis_gt)),]

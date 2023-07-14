@@ -4,6 +4,7 @@ argv <- commandArgs(trailingOnly = TRUE)
 
 infile <- argv[1]
 outfile <- argv[2]
+outfile_tsv <- argv[3]
 
 # load modules
 suppressWarnings(suppressMessages(library(tidyverse)))
@@ -32,5 +33,10 @@ n = gene_exp$Gene_name
 gene_exp_transpose <- as.data.frame(t(gene_exp[,-1]))
 colnames(gene_exp_transpose) <- n
 
-# write out the transposed file in csv format
-write.table(gene_exp_transpose, file = outfile, sep = ",", col.names = TRUE, row.names = TRUE)
+# write out the transposed file in csv format for peer factors
+write.table(gene_exp_transpose, file = outfile, sep = ",", 
+            col.names = TRUE, row.names = TRUE)
+
+# write out the transposed file in tsv format for downstream analysis
+write.table(gene_exp_transpose, file = outfile_tsv, sep = "\t",
+            row.names = TRUE)
