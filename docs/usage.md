@@ -11,6 +11,8 @@
   * [`--genotype`](#--genotype)
   * [`--gene_exp`](#--gene_exp)
 * [Other command line parameters](#other-command-line-parameters)
+  * [`--covariates`](#--covariates)
+  * [`--pca/--peer`](#--pca/--peer)
   * [`--outdir`](#--outdir)
   * [`--keepIntermediate`](#--keepIntermediate)
   * [`--prefix`](#--prefix)
@@ -108,6 +110,13 @@ Use this to specify your gene expression file. For example:
 
 
 ## Other command line parameters
+
+### `--covariates`
+The covariates to be regressed out from the gene expression
+
+### `--pca/--peer`
+Compute the principal components or peer factors to be regressed out from the the gene expressiom. You can either `--pca` or `--peer` not both.
+This can be used in combination with `--covariates`. The `--pca` by default uses the first 10 principal components.
 
 ### `--outdir`
 
