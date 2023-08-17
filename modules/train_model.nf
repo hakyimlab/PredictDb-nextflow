@@ -2,6 +2,7 @@
 
 process model_training_w_covs {
     tag "model training"
+    label "process_medium"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     
@@ -37,6 +38,7 @@ process model_training_w_covs {
 
 process model_training_wo_covs {
     tag "model training"
+    label "process_medium"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     

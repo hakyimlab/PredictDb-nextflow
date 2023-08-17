@@ -3,6 +3,7 @@
 
 process gunzipFile {
     tag "$gz"
+    label "process_low"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/unzipped-files" : params.outdir },
                saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input:
@@ -20,6 +21,7 @@ process gunzipFile {
 
 process parse_geneAnnot {
     tag "pre-processing"
+    label "process_low"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/gtf" : false },    
 	       saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
@@ -36,6 +38,7 @@ process parse_geneAnnot {
 
 process split_snpAnnot {
     tag "pre-processing"
+    label "process_low"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/snp_annot" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
@@ -52,6 +55,7 @@ process split_snpAnnot {
 
 process split_genotype {
     tag "pre-processing"
+    label "process_medium"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/genotype" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
@@ -68,6 +72,7 @@ process split_genotype {
 
 process transpose_geneExpr {
     tag "pre-processing"
+    label "process_low" 
     publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/transpose_gene-expr" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:

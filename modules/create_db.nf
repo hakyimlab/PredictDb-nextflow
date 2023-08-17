@@ -2,6 +2,7 @@
 
 process collectModel_covariances {
     tag "database"
+    label "process_medium"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
 
@@ -19,6 +20,7 @@ process collectModel_covariances {
 
 process collectModel_summaries {
     tag "database"
+    label "process_low"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
 
@@ -37,6 +39,7 @@ process collectModel_summaries {
 
 process collectWeight_summaries {
     tag "database"
+    label "process_medium"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
 
@@ -54,6 +57,7 @@ process collectWeight_summaries {
 
 process collectChrom_summaries {
     tag "database"
+    label "process_low"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
 
@@ -71,6 +75,7 @@ process collectChrom_summaries {
 
 process make_database {
     tag "database"
+    label "process_medium"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
 
@@ -92,6 +97,7 @@ process make_database {
 
 process filter_database {
     tag "database"
+    label "process_medium"
     publishDir path: "${params.outdir}/filtered_db",
                saveAs: it, mode: 'copy'
 

@@ -2,6 +2,7 @@
 
 process generate_peer_factors {
     tag "PEER Factors"
+    label "process_medium"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/PEER" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input: 
@@ -39,6 +40,7 @@ process generate_peer_factors {
 
 process process_peer_factors {
     tag "PEER Factors"
+    label "process_low"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input:
@@ -56,6 +58,7 @@ process process_peer_factors {
 
 process generate_pcs {
     tag "Principal Components"
+    label "process_medium"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input: 
@@ -72,6 +75,7 @@ process generate_pcs {
 
 process combine_covs {
     tag "Combining all covariates"
+    label "process_low"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
     input: 
