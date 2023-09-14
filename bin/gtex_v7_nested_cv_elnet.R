@@ -26,7 +26,10 @@ option_list <- list(
               metavar="character"),
   make_option(c("--nfolds"), type="numeric", default=10,
               help="The number of folds for the nested cross validation",
-              metavar="numeric"))
+              metavar="numeric"),
+  make_option(c("--nested_cv"), type="logical", default=FALSE, action='store_true',
+              help="If you want to run nested cv or not",
+              metavar="character"))
 
 opt_parser <- OptionParser(option_list=option_list)
 args <- parse_args(opt_parser)
@@ -38,6 +41,7 @@ gene_annot_file <- args$gene_annotation
 genotype_file <- args$genotype_file
 expression_file <- args$gene_expression
 covariates_file <- args$covariates_file
+nested_cv <- args$nested_cv
 prefix <- args$prefix
 n_folds <- as.numeric(args$nfolds)
 
@@ -256,6 +260,13 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
   covariance_file <- './covariances/' %&% prefix %&% '_chr' %&% chrom %&% '_covariances.txt'
   covariance_col <- c('GENE', 'RSID1', 'RSID2', 'VALUE')
   write(covariance_col, file = covariance_file, ncol = 4, sep = ' ')
+
+  # Let the user know the running version
+  if(nested_cv){
+    message("Running Nested cross-validated elasticnet, performance rho-avg calculated from nested folds")
+  } else {
+    message("Running cross-validated elasticnet, performance rho-avg calculated from cv-folds")
+  }
   
   # Attempt to build model for each gene----
   for (i in 1:n_genes) {
@@ -286,15 +297,28 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
       cis_gt = cis_gt[match(rownames(adj_expression), rownames(cis_gt)),]
       if (null_testing)
         adj_expression <- sample(adj_expression)
-      perf_measures <- nested_cv_elastic_net_perf(cis_gt, adj_expression, n_samples, n_train_test_folds, n_folds, alpha, samples)
-      R2_avg <- perf_measures$R2_avg
-      R2_sd <- perf_measures$R2_sd
-      pval_est <- perf_measures$pval_est
-      rho_avg <- perf_measures$rho_avg
-      rho_se <- perf_measures$rho_se
-      rho_zscore <- perf_measures$rho_zscore
-      rho_avg_squared <- perf_measures$rho_avg_squared
-      zscore_pval <- perf_measures$zscore_pval
+      # run this only when running nested-cv
+      if(nested_cv){
+        perf_measures <- nested_cv_elastic_net_perf(cis_gt, adj_expression, n_samples, n_train_test_folds, n_folds, alpha, samples)
+        R2_avg <- perf_measures$R2_avg
+        R2_sd <- perf_measures$R2_sd
+        pval_est <- perf_measures$pval_est
+        rho_avg <- perf_measures$rho_avg
+        rho_se <- perf_measures$rho_se
+        rho_zscore <- perf_measures$rho_zscore
+        rho_avg_squared <- perf_measures$rho_avg_squared
+        zscore_pval <- perf_measures$zscore_pval
+
+      } else {
+        R2_avg <- NA
+        R2_sd <- NA
+        pval_est <- NA
+        rho_avg <- NA
+        rho_se <- NA
+        rho_zscore <- NA
+        rho_avg_squared <- NA
+        zscore_pval <- NA
+      }
       # Fit on all data
       cv_fold_ids <- generate_fold_ids(length(adj_expression), n_folds)
       fit <- tryCatch(cv.glmnet(cis_gt, adj_expression, nfolds = n_folds, alpha = 0.5, type.measure='mse', foldid = cv_fold_ids, keep = TRUE),
@@ -325,6 +349,18 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
         cv_zscore_est <- sum(cv_zscore_folds) / sqrt(n_folds)
         cv_zscore_pval <- 2*pnorm(abs(cv_zscore_est), lower.tail = FALSE)
         cv_pval_est <- pchisq(-2 * sum(log(cv_pval_folds)), 2*n_folds, lower.tail = F)
+
+        # Update nested NA params with cv parameters
+        if(! nested_cv){
+          R2_avg <- cv_R2_avg
+          R2_sd <- cv_R2_sd
+          pval_est <- cv_pval_est
+          rho_avg <- cv_rho_avg
+          rho_se <- cv_rho_se
+          rho_zscore <- cv_zscore_est
+          rho_avg_squared <- cv_rho_avg_squared
+          zscore_pval <- cv_zscore_pval
+        }
         
         if (fit$nzero[best_lam_ind] > 0) {
           
