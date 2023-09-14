@@ -2,7 +2,7 @@
 
 process collectModel_covariances {
     tag "database"
-    label "process_medium"
+    label "process_high"
     publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
                saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
 

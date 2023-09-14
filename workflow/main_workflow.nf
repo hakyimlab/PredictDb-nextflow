@@ -21,7 +21,9 @@ include {gunzipFile as checkGTF;
             transpose_geneExpr } from '../modules/preprocess.nf' addParams(outdir: "${params.outdir}")
 
 include {model_training_w_covs; 
-            model_training_wo_covs } from '../modules/train_model.nf' addParams(outdir: "${params.outdir}")
+            model_training_wo_covs;
+            model_training_w_covs_nested;
+            model_training_wo_covs_nested } from '../modules/train_model.nf' addParams(outdir: "${params.outdir}")
 
 include {collectModel_summaries;
             collectChrom_summaries;
@@ -153,10 +155,20 @@ workflow TRAIN_MODEL {
 
         if(params.peer || params.pca || params.covariates) {
             println "Run CV-Enet with covariates"
-            model = model_training_w_covs(covs.first(),geneExp.first(),gene_annot.first(),snp_genotype_files)
+            if(params.nested_cv){
+                println "Running nested CV-Enet"
+                model = model_training_w_covs_nested(covs.first(),geneExp.first(),gene_annot.first(),snp_genotype_files)
+            }else {
+                model = model_training_w_covs(covs.first(),geneExp.first(),gene_annot.first(),snp_genotype_files)
+            }
         } else {
             println "Run CV-Enet without covariates"
-            model = model_training_wo_covs(geneExp.first(),gene_annot.first(),snp_genotype_files)
+            if(params.nested_cv){
+                println "Running nested CV-Enet"
+                model = model_training_wo_covs_nested(covs.first(),geneExp.first(),gene_annot.first(),snp_genotype_files)
+            } else {
+                model = model_training_wo_covs(geneExp.first(),gene_annot.first(),snp_genotype_files)
+            }
         }
     emit:
         chrom_summaries = model.chrom_summaries

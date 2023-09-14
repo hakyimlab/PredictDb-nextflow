@@ -34,7 +34,8 @@ def helpMessage() {
        --pca [bool]				Specifies if you want to perform PCA on the gene expression data. The default is false
        --peer [bool]                        Specifies if you want to perform PEER on the gene expression data. The default is false
        --covariates [file]			Specifies if you have covariates to be regressed out on the gene expression data.
-       --nfolds				The number of folds to split your data into. The default is 10
+       --nfolds [num]			The number of folds to split your data into. The default is 10
+       --nested_cv [bool]			Run the nested cross validated elasticnet, default: cross validated elasticnet.
        --keepIntermediate [bool]		Specifies if you want to keep intermediate files
        --prefix [str]			The prefix of your output files, we recommend using the population name used in the training. If not provided default name is used
        --outdir [file]			The output directory where the results will be saved
