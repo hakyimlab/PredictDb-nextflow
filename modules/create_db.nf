@@ -10,11 +10,13 @@ process collectModel_covariances {
     path covariance 
 
     output:
-    path "Covariances.txt", emit: all_model_sum
+    path "predict_db_${pop}.txt.gz", emit: all_model_sum
 
     script:
     """
     covariance_summary.R $covariance
+    mv Covariances.txt predict_db_${pop}.txt
+    gzip predict_db_${pop}.txt
     """
 }
 
@@ -85,7 +87,7 @@ process make_database {
     path chroms 
 
     output:
-    path "gtex_v7_${pop}.db", emit: whole_db
+    path "predict_db_${pop}.db", emit: whole_db
 
     script:
     pop = params.prefix
@@ -105,12 +107,12 @@ process filter_database {
     path all_db
 
     output:
-    path "gtex_v7_${pop}_filtered_signif.db", emit: filtered_db
+    path "predict_db_${pop}_filtered_signif.db", emit: filtered_db
 
     script:
     pop = params.prefix
     """
-    filter_db.R ${all_db} gtex_v7_${pop}_filtered_signif.db
+    filter_db.R ${all_db} predict_db_${pop}_filtered_signif.db
     """
 }
 

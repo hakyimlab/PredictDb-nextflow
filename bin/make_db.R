@@ -19,6 +19,15 @@ model_summaries <- read.table(model_summary, header = T, stringsAsFactors = F)
 weights <- read.table(weight_summary, header = T, stringsAsFactors = F)
 chrom_summary <- read.table(chroms_summary, header = T, stringsAsFactors = F)
 
+# Rename columns
+model_summaries <- model_summaries %>%
+    rename(pred.perf.R2 = rho_avg_squared, 
+        genename = gene_name, pred.perf.pval = zscore_pval, 
+        n.snps.in.model = n_snps_in_model)
+
+weights <- weights %>%
+    rename(eff_allele = alt, ref_allele = ref, weight = beta)
+
 # Create tables
 conn <- dbConnect(drv = driver, 'gtex_v7_' %&% population %&% '.db')
 dbWriteTable(conn, 'model_summaries', model_summaries, overwrite = TRUE)
