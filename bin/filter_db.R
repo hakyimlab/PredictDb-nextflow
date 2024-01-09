@@ -13,7 +13,7 @@ driver <- dbDriver("SQLite")
 
 in_conn <- dbConnect(driver, unfiltered_db)
 out_conn <- dbConnect(driver, filtered_db)
-model_summaries <- dbGetQuery(in_conn, 'select * from model_summaries')
+model_summaries <- dbGetQuery(in_conn, 'select * from extra')
 
 # Filter out models with low performance
 model_summaries <- model_summaries %>% 
