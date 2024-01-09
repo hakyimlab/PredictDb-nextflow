@@ -13,8 +13,12 @@ driver <- dbDriver("SQLite")
 
 in_conn <- dbConnect(driver, unfiltered_db)
 out_conn <- dbConnect(driver, filtered_db)
-model_summaries <- dbGetQuery(in_conn, 'select * from model_summaries where pred.perf.pval < 0.05 and rho_avg > 0.1')
-model_summaries <- model_summaries %>% filter(n.snps.in.model > 0) 
+model_summaries <- dbGetQuery(in_conn, 'select * from model_summaries')
+
+# Filter out models with low performance
+model_summaries <- model_summaries %>% 
+    filter(pred.perf.pval < 0.05 & rho_avg > 0.1) %>%
+    filter(n.snps.in.model > 0) 
 
 model_summaries$pred.perf.qval <- NA
 dbWriteTable(out_conn, 'extra', model_summaries, overwrite = TRUE)
