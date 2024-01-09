@@ -195,5 +195,5 @@ workflow CREATE_DB {
         filter_database(make_database.out.whole_db)
         collectModel_covariances(all_covariances)
         filter_cov(filter_database.out.filtered_db,
-                    collectModel_covariances.out.all_covariances)
+                    collectModel_covariances.out.all_model_sum)
 }
