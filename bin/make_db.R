@@ -31,7 +31,7 @@ weights <- weights %>%
 # Create tables
 conn <- dbConnect(drv = driver, 'predict_db_' %&% population %&% '.db')
 dbWriteTable(conn, 'extra', model_summaries, overwrite = TRUE)
-dbExecute(conn, "CREATE INDEX gene_model_summary ON model_summaries (gene)")
+dbExecute(conn, "CREATE INDEX gene_model_summary ON extra (gene)")
 
 dbWriteTable(conn, 'weights', weights, overwrite = TRUE)
 dbExecute(conn, "CREATE INDEX weights_rsid ON weights (rsid)")
