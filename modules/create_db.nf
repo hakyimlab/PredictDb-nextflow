@@ -13,6 +13,7 @@ process collectModel_covariances {
     path "predict_db_${pop}.txt.gz", emit: all_model_sum
 
     script:
+    pop = params.prefix
     """
     covariance_summary.R $covariance
     mv Covariances.txt predict_db_${pop}.txt
