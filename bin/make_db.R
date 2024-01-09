@@ -29,7 +29,7 @@ weights <- weights %>%
     rename(eff_allele = alt, ref_allele = ref, weight = beta)
 
 # Create tables
-conn <- dbConnect(drv = driver, 'gtex_v7_' %&% population %&% '.db')
+conn <- dbConnect(drv = driver, 'predict_db_' %&% population %&% '.db')
 dbWriteTable(conn, 'model_summaries', model_summaries, overwrite = TRUE)
 dbExecute(conn, "CREATE INDEX gene_model_summary ON model_summaries (gene)")
 
