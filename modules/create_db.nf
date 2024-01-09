@@ -108,12 +108,33 @@ process filter_database {
     path all_db
 
     output:
-    path "predict_db_${pop}_filtered_signif.db", emit: filtered_db
+    path "predict_db_${pop}_filtered.db", emit: filtered_db
 
     script:
     pop = params.prefix
     """
-    filter_db.R ${all_db} predict_db_${pop}_filtered_signif.db
+    filter_db.R ${all_db} predict_db_${pop}_filtered.db
     """
 }
 
+
+process filter_cov {
+    tag "database"
+    label "process_medium"
+    publishDir path: "${params.outdir}/filtered_db",
+               saveAs: it, mode: 'copy'
+
+    input:
+    path filtered_db
+    path all_covs
+
+    output:
+    path "predict_db_${pop}_filtered.txt.gz", emit: filtered_covs
+
+    script:
+    pop = params.prefix
+    """
+    filter_cov.R ${filtered_db} ${all_covs} predict_db_${pop}_filtered.txt
+    gzip predict_db_${pop}_filtered.txt
+    """
+}

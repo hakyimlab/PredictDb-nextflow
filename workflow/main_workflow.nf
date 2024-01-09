@@ -30,7 +30,8 @@ include {collectModel_summaries;
             collectWeight_summaries;
             collectModel_covariances;
             make_database; 
-            filter_database} from '../modules/create_db.nf' addParams(outdir: "${params.outdir}") 
+            filter_database;
+            filter_cov} from '../modules/create_db.nf' addParams(outdir: "${params.outdir}") 
 
 include {generate_peer_factors;
             process_peer_factors;
@@ -193,4 +194,6 @@ workflow CREATE_DB {
                       collectChrom_summaries.out.all_chrom_sum)
         filter_database(make_database.out.whole_db)
         collectModel_covariances(all_covariances)
+        filter_cov(filter_database.out.filtered_db,
+                    collectModel_covariances.out.all_covariances)
 }
