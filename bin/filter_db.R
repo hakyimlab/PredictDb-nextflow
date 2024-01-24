@@ -20,7 +20,7 @@ model_summaries <- model_summaries %>%
     filter(pred.perf.pval < 0.05 & rho_avg > 0.1) %>%
     filter(n.snps.in.model > 0) 
 
-model_summaries$pred.perf.qval <- NA
+
 dbWriteTable(out_conn, 'extra', model_summaries, overwrite = TRUE)
 construction <- dbGetQuery(in_conn, 'select * from construction')
 dbWriteTable(out_conn, 'construction', construction, overwrite = TRUE)

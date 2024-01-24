@@ -23,7 +23,8 @@ chrom_summary <- read.table(chroms_summary, header = T, stringsAsFactors = F)
 model_summaries <- model_summaries %>%
     rename(pred.perf.R2 = rho_avg_squared, 
         genename = gene_name, pred.perf.pval = zscore_pval, 
-        n.snps.in.model = n_snps_in_model)
+        n.snps.in.model = n_snps_in_model) %>%
+    dplyr::mutate(pred.perf.qval = NA)
 
 weights <- weights %>%
     rename(eff_allele = alt, ref_allele = ref, weight = beta)
