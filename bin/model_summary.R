@@ -13,7 +13,5 @@ for (arg in args) {
                              read.table(arg, header = T, stringsAsFactors = F,fill =T))
 }
 
-model_summaries <- rename(model_summaries, gene = gene_id)
-
 
 write.table(model_summaries, file = "Model_summary.txt", sep = "\t", row.names = FALSE) 

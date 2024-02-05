@@ -93,7 +93,7 @@ process model_training_w_covs_nested {
     nfolds = params.nfolds
     """
     mkdir -p summary weights covariances chrom_summary
-    elasticnet.R \
+    nested_cv_elasticnet.R \
         --chrom $chrom \
         --snp_annotation snp_file \
         --gene_annotation $gene_annot \
@@ -101,8 +101,7 @@ process model_training_w_covs_nested {
         --gene_expression $expression \
         --covariates_file $covariates \
         --prefix $prefix \
-        --nfolds $nfolds \
-        --nested_cv
+        --nfolds $nfolds
     """
 }
 
@@ -129,14 +128,13 @@ process model_training_wo_covs_nested {
     nfolds = params.nfolds
     """
     mkdir -p summary weights covariances chrom_summary
-    elasticnet.R \
+    nested_cv_elasticnet.R \
         --chrom $chrom \
         --snp_annotation snp_file \
         --gene_annotation $gene_annot \
         --genotype_file genotype_file \
         --gene_expression $expression \
         --prefix $prefix \
-        --nfolds $nfolds \
-        --nested_cv
+        --nfolds $nfolds
     """
 }

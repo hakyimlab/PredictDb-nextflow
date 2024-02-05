@@ -13,7 +13,5 @@ for (arg in args) {
                              read.table(arg, header = T, stringsAsFactors = F))
 }
 
-weights <- rename(weights, gene = gene_id)
-
 
 write.table(weights, file = "Weight_summary.txt", sep = "\t", row.names = FALSE) 

@@ -20,14 +20,25 @@ weights <- read.table(weight_summary, header = T, stringsAsFactors = F)
 chrom_summary <- read.table(chroms_summary, header = T, stringsAsFactors = F)
 
 # Rename columns
-model_summaries <- model_summaries %>%
-    rename(pred.perf.R2 = rho_avg_squared, 
-        genename = gene_name, pred.perf.pval = zscore_pval, 
-        n.snps.in.model = n_snps_in_model) %>%
-    dplyr::mutate(pred.perf.qval = NA)
+if('rho_avg_squared' %in% colnames(model_summaries)){
+    # nested cv elasticnet
+    model_summaries <- model_summaries %>%
+        rename(pred.perf.R2 = rho_avg_squared, gene = gene_id,
+            genename = gene_name, pred.perf.pval = zscore_pval, 
+            n.snps.in.model = n_snps_in_model)%>%
+        dplyr::mutate(pred.perf.qval = NA)
+
+} else {
+    # elasticnet
+    model_summaries <- model_summaries %>%
+        rename(pred.perf.R2 = pred_perf_R2, gene = gene_id,
+            genename = gene_name, pred.perf.pval = pred_perf_pval, 
+            n.snps.in.model = n_snps_in_model) %>%
+        dplyr::mutate(pred.perf.qval = NA)
+}
 
 weights <- weights %>%
-    rename(eff_allele = alt, ref_allele = ref, weight = beta)
+    rename(eff_allele = alt, ref_allele = ref, weight = beta, gene = gene_id)
 
 # Create tables
 conn <- dbConnect(drv = driver, 'predict_db_' %&% population %&% '.db')
