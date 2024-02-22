@@ -31,8 +31,8 @@ if('rho_avg_squared' %in% colnames(model_summaries)){
 } else {
     # elasticnet
     model_summaries <- model_summaries %>%
-        rename(pred.perf.R2 = pred_perf_R2, gene = gene_id,
-            genename = gene_name, pred.perf.pval = pred_perf_pval, 
+        rename(pred.perf.R2 = rho_avg_squared, gene = gene_id,
+            genename = gene_name, pred.perf.pval = zscore_pval, 
             n.snps.in.model = n_snps_in_model) %>%
         dplyr::mutate(pred.perf.qval = NA)
 }

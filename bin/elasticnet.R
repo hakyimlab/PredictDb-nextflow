@@ -24,7 +24,7 @@ option_list <- list(
   make_option(c("--prefix"), type="character", default="elastic_net_cv",
               help="The prefix for the output files",
               metavar="character"),
-  make_option(c("--nfolds"), type="numeric", default=3,
+  make_option(c("--nfolds"), type="numeric", default=5,
               help="The number of folds for the nested cross validation",
               metavar="numeric"),
   make_option(c("--seed"), type="numeric", default=1824,
@@ -168,12 +168,26 @@ evaluate_performance <- function(cis_gt, expr_adj, fit, best_lam_ind, best_lambd
   n_nonzero <- fit$nzero[best_lam_ind]
   if (n_nonzero > 0) {
     R2 <- rep(0, n_folds)
+    corr_folds <- rep(0, n_folds)
+    pval_folds <- rep(0, n_folds)
+    zscore_folds <- rep(0, n_folds)
+
     for (j in (1:n_folds)) {
       fold_idxs <- which(cv_fold_ids[,1] == j)
+      fitted_y <- fit$fit.preval[, best_lam_ind]
+
       tss <- sum(expr_adj[fold_idxs]**2)
-      rss <- sum((expr_adj[fold_idxs] - fit$fit.preval[fold_idxs, best_lam_ind])**2)
+      rss <- sum((expr_adj[fold_idxs] - fitted_y[fold_idxs])**2)
       R2[j] <- 1 - (rss/tss)
+
+      corr_folds[j] <- ifelse(sd(fitted_y[fold_idxs]) != 0,
+                       cor(expr_adj[fold_idxs], fitted_y[fold_idxs]), 0)
+      pval_folds[j] <- ifelse(sd(fitted_y[fold_idxs]) != 0 & length(expr_adj[fold_idxs]) > 3,
+                        cor.test(expr_adj[fold_idxs],fitted_y[fold_idxs])$p.value, 1)
+
+      zscore_folds[j] <- atanh(corr_folds[j]) * sqrt(length(expr_adj[fold_idxs]) - 3) # Fisher transformation
     }
+
     best_fit <- fit$glmnet.fit
     expr_adj_pred <- predict(best_fit, as.matrix(cis_gt), s = best_lambda)
     tss <- sum(expr_adj**2)
@@ -187,18 +201,27 @@ evaluate_performance <- function(cis_gt, expr_adj, fit, best_lam_ind, best_lambd
     R2_mean <- mean(R2)
     R2_sd <- sd(R2)
     inR2 <- 1 - (rss/tss)
+    rho_avg <- mean(corr_folds)
+    rho_se <- sd(corr_folds)
+    rho_avg_squared <- rho_avg**2
+
+    # Stouffer's method for combining z scores.
+    zscore_est <- sum(zscore_folds) / sqrt(n_folds)
+    zscore_pval <- 2*pnorm(abs(zscore_est), lower.tail = FALSE)
+    # Fisher's method for combining p-values: https://en.wikipedia.org/wiki/Fisher%27s_method
+    pval_est <- pchisq(-2 * sum(log(pval_folds)), 2*n_folds, lower.tail = F)
     # Old way
     pred_perf <- summary(lm(expr_adj ~ fit$fit.preval[,best_lam_ind]))
     pred_perf_rsq <- pred_perf$r.squared
-    pred_perf_r <- sqrt(pred_perf$r.squared)
     
-    pred_perf_pval <- pred_perf$coef[2,4]
     #one_sided_pval <- cor.test(expr_adj, fit$fit.preval[,best_lam_ind], alternative = 'greater')$p.value
     out <- list(weights = weights, n_weights = n_nonzero, weighted_snps = weighted_snps, R2_mean = R2_mean, R2_sd = R2_sd,
-                inR2 = inR2, pred_perf_rsq = pred_perf_rsq, pred_perf_pval = pred_perf_pval, pred_perf_r = pred_perf_r)
+                inR2 = inR2, pval_est=pval_est, rho_avg=rho_avg, rho_se=rho_se, 
+                rho_zscore=zscore_est, rho_avg_squared=rho_avg_squared, zscore_pval=zscore_pval)
   } else {
     out <- list(weights = NA, n_weights = n_nonzero, weighted_snps = NA, R2_mean = NA, R2_sd = NA,
-                inR2 = NA, pred_perf_rsq = NA, pred_perf_pval = NA, pred_perf_r = NA)
+                inR2 = NA, pval_est = NA, rho_avg = NA, rho_se= NA, 
+                rho_zscore= NA, rho_avg_squared= NA, zscore_pval= NA)
   }
   out
 }
@@ -246,8 +269,9 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
   model_summary_file <- './summary/' %&% prefix %&% '_chr' %&% chrom %&% '_model_summaries.txt'
   model_summary_cols <- c('gene_id', 'gene_name', 'gene_type', 'alpha', 'n_snps_in_window', 'cv_mse', 
                           'lambda_iteration', 'lambda_min', 'n_snps_in_model',
-                          'cv_R2_avg', 'cv_R2_sd', 'in_sample_R2', 'pred_perf_R2', 'pred_perf_pval', 'rho_avg')
-  write(model_summary_cols, file = model_summary_file, ncol = 15, sep = '\t')
+                          'cv_R2_avg', 'cv_R2_sd', 'in_sample_R2', 'cv_fisher_pval', 
+                          'rho_avg', 'rho_se', 'rho_zscore', 'rho_avg_squared', 'zscore_pval')
+  write(model_summary_cols, file = model_summary_file, ncol = 18, sep = '\t')
   
   weights_file <- './weights/' %&% prefix %&% '_chr' %&% chrom %&% '_weights.txt'
   weights_col <- c('gene_id', 'rsid', 'varID', 'ref', 'alt', 'beta')
@@ -269,13 +293,13 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
     gene <- genes[i]
     gene_name <- gene_annot$gene_name[gene_annot$gene_id == gene]
     gene_type <- get_gene_type(gene_annot, gene)
-    model_summary <- c(gene, gene_name, gene_type, alpha, NA, NA, NA, NA, 0, NA, NA, NA, NA, NA, NA)
+    model_summary <- c(gene, gene_name, gene_type, alpha, NA, NA, NA, NA, 0, NA, NA, NA, NA, NA, NA, NA, NA, NA)
     coords <- get_gene_coords(gene_annot, gene)
     cis_gt <- get_cis_genotype(gt_df, snp_annot, coords, cis_window)
 
     if (all(is.na(cis_gt))) {
       # No snps within window for gene.
-      write(model_summary, file = model_summary_file, append = TRUE, ncol = 15, sep = '\t')
+      write(model_summary, file = model_summary_file, append = TRUE, ncol = 18, sep = '\t')
       next
     }
 
@@ -297,7 +321,7 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
         eval <- evaluate_performance(cis_gt, adj_expression, elnet_out$cv_fit, elnet_out$best_lam_ind, elnet_out$best_lambda, cv_fold_ids, n_k_folds)
         model_summary <- c(gene, gene_name, gene_type, alpha, ncol(cis_gt), elnet_out$min_avg_cvm, elnet_out$best_lam_ind,
                            elnet_out$best_lambda, eval$n_weights, eval$R2_mean, eval$R2_sd, eval$inR2,
-                           eval$pred_perf_rsq, eval$pred_perf_pval, eval$pred_perf_r)
+                           eval$pval_est, eval$rho_avg, eval$rho_se, eval$zscore_est, eval$rho_avg_squared, eval$zscore_pval)
           #return(list(eval = eval, model_summary = model_summary, elnet_out = elnet_out, snp_annot = snp_annot))
         if (eval$n_weights > 0) {
           weighted_snps_info <- snp_annot %>% filter(varID %in% eval$weighted_snps) %>% select(rsid, varID, ref_vcf, alt_vcf)
@@ -311,10 +335,10 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
         }
       }
     }
-    write(model_summary, file = model_summary_file, append = TRUE, ncol = 15, sep = '\t')
+    write(model_summary, file = model_summary_file, append = TRUE, ncol = 18, sep = '\t')
   }
 }
 
 #Run analysis
 main(snp_annot_file, gene_annot_file, genotype_file, expression_file, 
-    covariates_file, as.numeric(chrom), prefix)
+    covariates_file, as.numeric(chrom), prefix,n_k_folds = n_k_folds)

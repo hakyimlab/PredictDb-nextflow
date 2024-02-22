@@ -166,7 +166,7 @@ workflow TRAIN_MODEL {
             println "Run CV-Enet without covariates"
             if(params.nested_cv){
                 println "Running nested CV-Enet"
-                model = model_training_wo_covs_nested(covs.first(),geneExp.first(),gene_annot.first(),snp_genotype_files)
+                model = model_training_wo_covs_nested(geneExp.first(),gene_annot.first(),snp_genotype_files)
             } else {
                 model = model_training_wo_covs(geneExp.first(),gene_annot.first(),snp_genotype_files)
             }
