@@ -261,9 +261,7 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
   # Set seed and cross-validation fold ids----
   seed <- ifelse(is.na(seed), sample(1:1000000, 1), seed)
   set.seed(seed)
-  cv_fold_ids <- matrix(nrow = n_samples, ncol = n_times)
-  for (j in 1:n_times)
-    cv_fold_ids[,j] <- sample(1:n_k_folds, n_samples, replace = TRUE)
+  
   
   # Prepare output data----
   model_summary_file <- './summary/' %&% prefix %&% '_chr' %&% chrom %&% '_model_summaries.txt'
@@ -315,6 +313,12 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
       adj_expression <- as.matrix(adj_expression[(rownames(adj_expression) %in% rownames(cis_gt)),])
       # sort row names to be in the same order for X and y
       cis_gt = cis_gt[match(rownames(adj_expression), rownames(cis_gt)),]
+
+      # make the cv folds
+      n_filt <- length(adj_expression)
+      cv_fold_ids <- matrix(nrow = n_filt, ncol = n_times)
+      for (j in 1:n_times)
+        cv_fold_ids[,j] <- sample(1:n_k_folds, n_filt, replace = TRUE)
 
       elnet_out <- do_elastic_net(cis_gt, adj_expression, n_k_folds, cv_fold_ids, n_times, alpha)
       if (length(elnet_out) > 0) {
