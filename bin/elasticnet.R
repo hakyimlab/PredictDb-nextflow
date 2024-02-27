@@ -325,7 +325,7 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
         eval <- evaluate_performance(cis_gt, adj_expression, elnet_out$cv_fit, elnet_out$best_lam_ind, elnet_out$best_lambda, cv_fold_ids, n_k_folds)
         model_summary <- c(gene, gene_name, gene_type, alpha, ncol(cis_gt), elnet_out$min_avg_cvm, elnet_out$best_lam_ind,
                            elnet_out$best_lambda, eval$n_weights, eval$R2_mean, eval$R2_sd, eval$inR2,
-                           eval$pval_est, eval$rho_avg, eval$rho_se, eval$zscore_est, eval$rho_avg_squared, eval$zscore_pval)
+                           eval$pval_est, eval$rho_avg, eval$rho_se, eval$rho_zscore, eval$rho_avg_squared, eval$zscore_pval)
           #return(list(eval = eval, model_summary = model_summary, elnet_out = elnet_out, snp_annot = snp_annot))
         if (eval$n_weights > 0) {
           weighted_snps_info <- snp_annot %>% filter(varID %in% eval$weighted_snps) %>% select(rsid, varID, ref_vcf, alt_vcf)
