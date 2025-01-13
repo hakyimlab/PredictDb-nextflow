@@ -3,8 +3,8 @@
 process collectModel_covariances {
     tag "database"
     label "process_high"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
 
     input:
     path covariance 
@@ -24,8 +24,8 @@ process collectModel_covariances {
 process collectModel_summaries {
     tag "database"
     label "process_low"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
 
     input:
     path model 
@@ -43,8 +43,8 @@ process collectModel_summaries {
 process collectWeight_summaries {
     tag "database"
     label "process_medium"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
 
     input:
     path weight 
@@ -61,8 +61,8 @@ process collectWeight_summaries {
 process collectChrom_summaries {
     tag "database"
     label "process_low"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
 
     input:
     path chrom 
@@ -79,8 +79,8 @@ process collectChrom_summaries {
 process make_database {
     tag "database"
     label "process_medium"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/database" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
 
     input:
     path models 

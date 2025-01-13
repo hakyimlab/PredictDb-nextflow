@@ -3,8 +3,8 @@
 process model_training_w_covs {
     tag "model training"
     label "process_high"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     
     input:
     file covariates 
@@ -39,8 +39,8 @@ process model_training_w_covs {
 process model_training_wo_covs {
     tag "model training"
     label "process_high"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     
     input:
     file expression 
@@ -73,8 +73,8 @@ process model_training_wo_covs {
 process model_training_w_covs_nested {
     tag "model training"
     label "process_high"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     
     input:
     file covariates 
@@ -109,8 +109,8 @@ process model_training_w_covs_nested {
 process model_training_wo_covs_nested {
     tag "model training"
     label "process_high"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/models" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     
     input:
     file expression 

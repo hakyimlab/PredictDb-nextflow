@@ -3,8 +3,8 @@
 process generate_peer_factors {
     tag "PEER Factors"
     label "process_medium"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/PEER" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/PEER" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input: 
     path csv
     val tcount
@@ -41,8 +41,8 @@ process generate_peer_factors {
 process process_peer_factors {
     tag "PEER Factors"
     label "process_low"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input:
     path peer 
     path gene_expr
@@ -59,8 +59,8 @@ process process_peer_factors {
 process generate_pcs {
     tag "Principal Components"
     label "process_medium"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input: 
     path gene_expr
 
@@ -76,8 +76,8 @@ process generate_pcs {
 process combine_covs {
     tag "Combining all covariates"
     label "process_low"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/covariates" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input: 
     path computed_covs
     path provided_covs

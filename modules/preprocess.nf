@@ -22,8 +22,8 @@ process gunzipFile {
 process parse_geneAnnot {
     tag "pre-processing"
     label "process_low"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/gtf" : false },    
-	       saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/gtf" : params.outdir },    
+	       saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input:
     path gtf
 
@@ -39,8 +39,8 @@ process parse_geneAnnot {
 process split_snpAnnot {
     tag "pre-processing"
     label "process_low"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/snp_annot" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/snp_annot" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input:
     path snp
 
@@ -56,8 +56,8 @@ process split_snpAnnot {
 process split_genotype {
     tag "pre-processing"
     label "process_medium"
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/genotype" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/genotype" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input:
     path genot
 
@@ -73,8 +73,8 @@ process split_genotype {
 process transpose_geneExpr {
     tag "pre-processing"
     label "process_low" 
-    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/transpose_gene-expr" : false },
-               saveAs: { params.keepIntermediate ? it : false }, mode: 'copy'
+    publishDir path: { params.keepIntermediate ? "${params.outdir}/pre-proccessed/transpose_gene-expr" : params.outdir },
+               saveAs: { params.keepIntermediate ? it : null }, mode: 'copy'
     input:
     path geneExp
 
