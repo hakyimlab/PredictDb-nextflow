@@ -24,3 +24,5 @@ Install nextflow from offfical [Nextflow website](https://www.nextflow.io/) or [
 Details on the usage of PredictDb are available [here](https://github.com/hakyimlab/PredictDb-nextflow/blob/master/docs/usage.md).
 
 Description of file formats used is found [here](https://github.com/hakyimlab/PredictDb-nextflow/blob/master/docs/file_descriptions.md).
+
+![](./docs/predictdb.excalidraw.svg)
