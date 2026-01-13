@@ -69,6 +69,7 @@ summary['Genotype file']         = params.genotype
 if (params.covariates) {
     summary['Covariates']    = params.covariates
 }
+summary['Profile']               = workflow.profile ?: 'default'
 summary['Max Resources']         = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 summary['Output dir']            = params.outdir
 summary['Launch dir']            = workflow.launchDir
