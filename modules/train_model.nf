@@ -21,6 +21,7 @@ process model_training_w_covs {
     script:
     prefix = params.prefix
     nfolds = params.nfolds
+    n_times = params.n_times
     """
     mkdir -p summary weights covariances chrom_summary
     elasticnet.R \
@@ -31,7 +32,8 @@ process model_training_w_covs {
         --gene_expression $expression \
         --covariates_file $covariates \
         --prefix $prefix \
-        --nfolds $nfolds
+        --nfolds $nfolds \
+        --n_times $n_times
     """
 }
 
@@ -56,6 +58,7 @@ process model_training_wo_covs {
     script:
     prefix = params.prefix
     nfolds = params.nfolds
+    n_times = params.n_times
     """
     mkdir -p summary weights covariances chrom_summary
     elasticnet.R \
@@ -65,7 +68,8 @@ process model_training_wo_covs {
         --genotype_file genotype_file \
         --gene_expression $expression \
         --prefix $prefix \
-        --nfolds $nfolds
+        --nfolds $nfolds \
+        --n_times $n_times
     """
 }
 

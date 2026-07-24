@@ -27,6 +27,9 @@ option_list <- list(
   make_option(c("--nfolds"), type="numeric", default=5,
               help="The number of folds for the nested cross validation",
               metavar="numeric"),
+  make_option(c("--n_times"), type="numeric", default=3,
+              help="The number of repeated CV fold assignments to average over when selecting lambda",
+              metavar="numeric"),
   make_option(c("--seed"), type="numeric", default=1824,
               help="Seed for reproducibility",
               metavar="numeric"))
@@ -43,6 +46,7 @@ expression_file <- args$gene_expression
 covariates_file <- args$covariates_file
 prefix <- args$prefix
 n_k_folds <- as.numeric(args$nfolds)
+n_times <- as.numeric(args$n_times)
 
 suppressMessages(library(dplyr))
 suppressMessages(library(glmnet))
@@ -53,8 +57,8 @@ suppressMessages(library(tools))
 
 
 get_filtered_snp_annot <- function(snp_annot_file_name) {
-  snp_annot <- read.table(snp_annot_file_name, header = T, stringsAsFactors = F) 
-  
+  snp_annot <- read.table(snp_annot_file_name, header = T, stringsAsFactors = F)
+
   if("refAllele" %in% names(snp_annot)) {snp_annot <- snp_annot %>% rename(ref_vcf = refAllele)}
   if("effectAllele" %in% names(snp_annot)) {snp_annot <- snp_annot %>% rename(alt_vcf = effectAllele)}
 
@@ -79,7 +83,7 @@ get_maf_filtered_genotype <- function(genotype_file_name,  maf, samples) {
 
 get_gene_annotation <- function(gene_annot_file_name, chrom, gene_types=c('protein_coding', 'pseudogene', 'lincRNA')){
   gene_df <- read.table(gene_annot_file_name, header = TRUE, stringsAsFactors = FALSE) %>%
-    filter((chr == chrom) & gene_type %in% gene_types) %>% 
+    filter((chr == chrom) & gene_type %in% gene_types) %>%
     mutate(gene_id = file_path_sans_ext(gene_id))  # remove gene ver from gene names
   gene_df
 }
@@ -144,7 +148,7 @@ do_elastic_net <- function(cis_gt, expr_adj, n_folds, cv_fold_ids, n_times, alph
     fits[[1]] <- fit
     cvms <- matrix(nrow = 100, ncol = n_times)
     cvms[1:length(fit$cvm),1] <- fit$cvm
-    for (i in 2:(n_times)) {
+    for (i in seq_len(n_times)[-1]) {
       fit <- cv.glmnet(cis_gt, expr_adj, lambda = lambda_seq, nfolds = n_folds, alpha = alpha, keep = FALSE, foldid = cv_fold_ids[,i], parallel = FALSE)
       fits[[i]] <- fit
       cvms[1:length(fit$cvm),i] <- fit$cvm
@@ -192,7 +196,7 @@ evaluate_performance <- function(cis_gt, expr_adj, fit, best_lam_ind, best_lambd
     expr_adj_pred <- predict(best_fit, as.matrix(cis_gt), s = best_lambda)
     tss <- sum(expr_adj**2)
     rss <- sum((expr_adj - expr_adj_pred)**2)
-    
+
     n_samp <- length(expr_adj)
     #f_stat <- ((tss - rss) / n_nonzero) / (rss / (n_samp - ncol(cis_gt) - 1))
     #p_val <- pf(f_stat, n_samp - 1, n_samp - ncol(cis_gt) - 1, lower.tail = FALSE)
@@ -213,14 +217,14 @@ evaluate_performance <- function(cis_gt, expr_adj, fit, best_lam_ind, best_lambd
     # Old way
     pred_perf <- summary(lm(expr_adj ~ fit$fit.preval[,best_lam_ind]))
     pred_perf_rsq <- pred_perf$r.squared
-    
+
     #one_sided_pval <- cor.test(expr_adj, fit$fit.preval[,best_lam_ind], alternative = 'greater')$p.value
     out <- list(weights = weights, n_weights = n_nonzero, weighted_snps = weighted_snps, R2_mean = R2_mean, R2_sd = R2_sd,
-                inR2 = inR2, pval_est=pval_est, rho_avg=rho_avg, rho_se=rho_se, 
+                inR2 = inR2, pval_est=pval_est, rho_avg=rho_avg, rho_se=rho_se,
                 rho_zscore=zscore_est, rho_avg_squared=rho_avg_squared, zscore_pval=zscore_pval)
   } else {
     out <- list(weights = NA, n_weights = n_nonzero, weighted_snps = NA, R2_mean = NA, R2_sd = NA,
-                inR2 = NA, pval_est = NA, rho_avg = NA, rho_se= NA, 
+                inR2 = NA, pval_est = NA, rho_avg = NA, rho_se= NA,
                 rho_zscore= NA, rho_avg_squared= NA, zscore_pval= NA)
   }
   out
@@ -253,38 +257,38 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
   n_genes <- length(expr_df)
   snp_annot <- get_filtered_snp_annot(snp_annot_file)
   gt_df <- get_maf_filtered_genotype(genotype_file, maf, samples)
-  
+
   if (!is.null(args$covariates_file)) {
     covariates_df <- get_covariates(covariates_file, samples)
   }
-  
+
   # Set seed and cross-validation fold ids----
   seed <- ifelse(is.na(seed), sample(1:1000000, 1), seed)
   set.seed(seed)
-  
-  
+
+
   # Prepare output data----
   model_summary_file <- './summary/' %&% prefix %&% '_chr' %&% chrom %&% '_model_summaries.txt'
-  model_summary_cols <- c('gene_id', 'gene_name', 'gene_type', 'alpha', 'n_snps_in_window', 'cv_mse', 
+  model_summary_cols <- c('gene_id', 'gene_name', 'gene_type', 'alpha', 'n_snps_in_window', 'cv_mse',
                           'lambda_iteration', 'lambda_min', 'n_snps_in_model',
-                          'cv_R2_avg', 'cv_R2_sd', 'in_sample_R2', 'cv_fisher_pval', 
+                          'cv_R2_avg', 'cv_R2_sd', 'in_sample_R2', 'cv_fisher_pval',
                           'rho_avg', 'rho_se', 'rho_zscore', 'rho_avg_squared', 'zscore_pval')
   write(model_summary_cols, file = model_summary_file, ncol = 18, sep = '\t')
-  
+
   weights_file <- './weights/' %&% prefix %&% '_chr' %&% chrom %&% '_weights.txt'
   weights_col <- c('gene_id', 'rsid', 'varID', 'ref', 'alt', 'beta')
   write(weights_col, file = weights_file, ncol = 6, sep = '\t')
-  
+
   tiss_chr_summ_f <- './chrom_summary/' %&% prefix %&% '_chr' %&% chrom %&% '_summary.txt'
   tiss_chr_summ_col <- c('n_samples', 'chrom', 'cv_seed', 'n_genes')
   tiss_chr_summ <- data.frame(n_samples, chrom, seed, n_genes)
   colnames(tiss_chr_summ) <- tiss_chr_summ_col
   write.table(tiss_chr_summ, file = tiss_chr_summ_f, quote = FALSE, row.names = FALSE, sep = '\t')
-  
+
   covariance_file <- './covariances/' %&% prefix %&% '_chr' %&% chrom %&% '_covariances.txt'
   covariance_col <- c('GENE', 'RSID1', 'RSID2', 'VALUE')
   write(covariance_col, file = covariance_file, ncol = 4, sep = ' ')
-  
+
   # Attempt to build model for each gene----
   for (i in 1:n_genes) {
     cat(i, "/", n_genes, "\n")
@@ -344,5 +348,5 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
 }
 
 #Run analysis
-main(snp_annot_file, gene_annot_file, genotype_file, expression_file, 
-    covariates_file, as.numeric(chrom), prefix,n_k_folds = n_k_folds)
+main(snp_annot_file, gene_annot_file, genotype_file, expression_file,
+    covariates_file, as.numeric(chrom), prefix, n_times = n_times, n_k_folds = n_k_folds)
