@@ -155,7 +155,7 @@ workflow TRAIN_MODEL {
         //snp_genotype_files.view()
 
         if(params.peer || params.pca || params.covariates) {
-            println "Run CV-Enet with covariates"
+            println "Run training with covariates"
             if(params.nested_cv){
                 println "Running nested CV-Enet"
                 model = model_training_w_covs_nested(covs.first(),geneExp.first(),gene_annot.first(),snp_genotype_files)
@@ -163,7 +163,7 @@ workflow TRAIN_MODEL {
                 model = model_training_w_covs(covs.first(),geneExp.first(),gene_annot.first(),snp_genotype_files)
             }
         } else {
-            println "Run CV-Enet without covariates"
+            println "Run training without covariates"
             if(params.nested_cv){
                 println "Running nested CV-Enet"
                 model = model_training_wo_covs_nested(geneExp.first(),gene_annot.first(),snp_genotype_files)

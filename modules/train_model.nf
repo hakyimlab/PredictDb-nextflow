@@ -22,9 +22,10 @@ process model_training_w_covs {
     prefix = params.prefix
     nfolds = params.nfolds
     n_times = params.n_times
+    chunk_size = params.chunk_size
     """
     mkdir -p summary weights covariances chrom_summary
-    elasticnet.R \
+    fast_elasticnet.R \
         --chrom $chrom \
         --snp_annotation snp_file \
         --gene_annotation $gene_annot \
@@ -33,7 +34,9 @@ process model_training_w_covs {
         --covariates_file $covariates \
         --prefix $prefix \
         --nfolds $nfolds \
-        --n_times $n_times
+        --n_times $n_times \
+        --n_cores ${task.cpus} \
+        --chunk_size $chunk_size
     """
 }
 
@@ -59,9 +62,10 @@ process model_training_wo_covs {
     prefix = params.prefix
     nfolds = params.nfolds
     n_times = params.n_times
+    chunk_size = params.chunk_size
     """
     mkdir -p summary weights covariances chrom_summary
-    elasticnet.R \
+    fast_elasticnet.R \
         --chrom $chrom \
         --snp_annotation snp_file \
         --gene_annotation $gene_annot \
@@ -69,7 +73,9 @@ process model_training_wo_covs {
         --gene_expression $expression \
         --prefix $prefix \
         --nfolds $nfolds \
-        --n_times $n_times
+        --n_times $n_times \
+        --n_cores ${task.cpus} \
+        --chunk_size $chunk_size
     """
 }
 

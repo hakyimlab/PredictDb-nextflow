@@ -36,6 +36,7 @@ def helpMessage() {
        --covariates [file]			Specifies if you have covariates to be regressed out on the gene expression data.
        --nfolds [num]			The number of folds to split your data into. The default is 10
        --n_times [num]			The number of times to repeat the cross validation. The default is 3
+       --chunk_size [num]			Number of genes trained and written per batch during model training (bounds peak memory). The default is 20
        --nested_cv [bool]			Run the nested cross validated elasticnet, default: cross validated elasticnet.
        --keepIntermediate [bool]		Specifies if you want to keep intermediate files
        --prefix [str]			The prefix of your output files, we recommend using the population name used in the training. If not provided default name is used
