@@ -425,10 +425,15 @@ main <- function(snp_annot_file, gene_annot_file, genotype_file, expression_file
     end_idx <- min(chunk_idx * chunk_size, n_genes)
     cat("Chunk", chunk_idx, "/", n_chunks, "(genes", start_idx, "-", end_idx, ")\n")
 
+    # mc.preschedule=FALSE: dispatch one gene at a time to whichever worker is
+    # free next, instead of splitting the chunk into fixed blocks up front.
+    # Per-gene cost varies enormously with local SNP density (a few hundred to
+    # several thousand cis-SNPs), so static blocks can strand one worker with
+    # several expensive genes while others sit idle.
     chunk_results <- mclapply(jobs[start_idx:end_idx], run_gene_job, gt_df = gt_df, snp_annot = snp_annot,
                                snp_annot_lookup = snp_annot, cis_window = cis_window,
                                n_k_folds = n_k_folds, n_times = n_times, alpha = alpha,
-                               mc.cores = n_cores)
+                               mc.cores = n_cores, mc.preschedule = FALSE)
 
     for (res in chunk_results) {
       write_gene_result(res, alpha, model_summary_file, weights_file, covariance_file)
