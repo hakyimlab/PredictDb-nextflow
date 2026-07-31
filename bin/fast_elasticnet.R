@@ -1,4 +1,14 @@
 #! /usr/bin/env Rscript
+
+# Force single-threaded BLAS before any BLAS-linked package loads. mclapply
+# forks worker processes; a multi-threaded BLAS (OpenBLAS/MKL) can leave
+# forked children with a corrupted internal thread pool (the OS threads that
+# owned its locks don't exist post-fork), causing segfaults. Belt-and-suspenders
+# alongside setting these in the calling shell, since env vars must be in
+# place before the BLAS library initializes.
+Sys.setenv(OPENBLAS_NUM_THREADS = "1", OMP_NUM_THREADS = "1",
+           MKL_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
+
 suppressMessages(library(optparse))
 
 # create options
@@ -241,13 +251,17 @@ evaluate_performance <- function(cis_gt, expr_adj, fit, best_lam_ind, best_lambd
 compute_covariance <- function(gene_id, cis_gt, rsids, varIDs) {
   model_gt <- cis_gt[,varIDs, drop=FALSE]
   geno_cov <- cov(model_gt)
-  cov_df <- data.frame(gene=character(),rsid1=character(),rsid2=character(), covariance=double())
-  for (i in 1:length(rsids)) {
-    for (j in i:length(rsids)) {
-      cov_df <- rbind(cov_df, data.frame(gene=gene_id,rsid1=rsids[i], rsid2=rsids[j], covariance=geno_cov[i,j]))
-    }
-  }
-  cov_df
+  n <- length(rsids)
+  # Vectorized replacement for the old nested-loop + rbind()-per-pair pattern:
+  # rbind() in a loop reallocates and copies the *entire* accumulated table on
+  # every single call, which for a gene with many selected SNPs (n large, up
+  # to O(n^2) pairs) can spike memory usage catastrophically and crash R
+  # outright - this is what was segfaulting/aborting on genes with large
+  # models. Builds the same (i, j) pairs, i=1..n, j=i..n, in one allocation.
+  i_idx <- rep(seq_len(n), times = rev(seq_len(n)))
+  j_idx <- unlist(lapply(seq_len(n), function(i) i:n))
+  data.frame(gene = gene_id, rsid1 = rsids[i_idx], rsid2 = rsids[j_idx],
+             covariance = geno_cov[cbind(i_idx, j_idx)])
 }
 
 # ---------------------------------------------------------------------------
