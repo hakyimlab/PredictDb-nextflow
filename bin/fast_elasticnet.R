@@ -70,7 +70,6 @@ suppressMessages(library(dplyr))
 suppressMessages(library(glmnet))
 suppressMessages((library(reshape2)))
 suppressMessages(library(methods))
-suppressMessages(library(tools))
 suppressMessages(library(parallel))
 "%&%" <- function(a,b) paste(a,b, sep = "")
 
@@ -109,20 +108,17 @@ get_maf_filtered_genotype <- function(genotype_file_name,  maf, samples) {
 
 get_gene_annotation <- function(gene_annot_file_name, chrom, gene_types=c('protein_coding', 'pseudogene', 'lincRNA')){
   gene_df <- read.table(gene_annot_file_name, header = TRUE, stringsAsFactors = FALSE) %>%
-    filter((chr == chrom) & gene_type %in% gene_types) %>%
-    mutate(gene_id = file_path_sans_ext(gene_id))  # remove gene ver from gene names
+    filter((chr == chrom) & gene_type %in% gene_types)
   gene_df
 }
 
 get_gene_type <- function(gene_annot, gene) {
-  gene_annot <- gene_annot %>% mutate(gene_id = file_path_sans_ext(gene_id))
   filter(gene_annot, gene_id == gene)$gene_type
 }
 
 get_gene_expression <- function(gene_expression_file_name, gene_annot) {
   expr_df <- as.data.frame(t(read.table(gene_expression_file_name, header = T, stringsAsFactors = F, row.names = 1)))
   expr_df <- expr_df %>% t() %>% as.data.frame()
-  colnames(expr_df) <- file_path_sans_ext(colnames(expr_df)) # remove gene version number
   expr_df <- expr_df %>% select(one_of(intersect(gene_annot$gene_id, colnames(expr_df))))
   expr_df
 }
